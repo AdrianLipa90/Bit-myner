@@ -13,7 +13,7 @@ typedef __m512i V;
 #define VAND(a,b) _mm512_and_si512((a),(b))
 #define VANDNOT(a,b) _mm512_andnot_si512((a),(b))
 #define VOR(a,b) _mm512_or_si512((a),(b))
-#define VROR(x,n) VOR(_mm512_srli_epi32((x),(n)),_mm512_slli_epi32((x),32-(n)))
+#define VROR(x,n) _mm512_ror_epi32((x),(n))
 static inline V s0(V x){return VXOR(VXOR(VROR(x,7),VROR(x,18)),_mm512_srli_epi32(x,3));}
 static inline V s1(V x){return VXOR(VXOR(VROR(x,17),VROR(x,19)),_mm512_srli_epi32(x,10));}
 static inline V S0(V x){return VXOR(VXOR(VROR(x,2),VROR(x,13)),VROR(x,22));}
