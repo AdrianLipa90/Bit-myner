@@ -1,0 +1,61 @@
+{
+  "schema": "BITMYNER_MARKER_TRAINING_1000_SUMMARY_V0_1",
+  "source_receipt_blake2b256": "8f4b4206f788eda3ffa13f0d123383436ce6eb8833b45d6ecde754c848c9375c",
+  "iterations": 1000,
+  "fixture": {
+    "synthetic_headers": true,
+    "header_count": 100,
+    "nonces_per_header": 128,
+    "sample_count": 12800,
+    "split_counts": {
+      "train": 7552,
+      "validation": 3200,
+      "holdout": 2048
+    },
+    "thresholds": [4, 6, 8],
+    "seed": 616,
+    "split_seed": "bitmyner-marker-training-v0.1"
+  },
+  "checkpoints": [
+    {"iteration":0,"train_headers_seen":5,"train_samples_seen":640,"unique_genomes_evaluated":64,"duplicate_proposals":0,"champion_genome":[48],"champion_complexity":1,"train_score":0.39060669282261384,"validation_gamma_lcb":[{"k":4,"gamma_lcb":0.6791671488762727},{"k":6,"gamma_lcb":0.5835132336063482},{"k":8,"gamma_lcb":0.32901345475624577}]},
+    {"iteration":100,"train_headers_seen":10,"train_samples_seen":1280,"unique_genomes_evaluated":864,"duplicate_proposals":395,"champion_genome":[35,39,130],"champion_complexity":3,"train_score":0.7328217349769771,"validation_gamma_lcb":[{"k":4,"gamma_lcb":0.2540053508690287},{"k":6,"gamma_lcb":0.14061918084645555},{"k":8,"gamma_lcb":0.0}]},
+    {"iteration":200,"train_headers_seen":16,"train_samples_seen":2048,"unique_genomes_evaluated":1664,"duplicate_proposals":1295,"champion_genome":[4,24,89],"champion_complexity":3,"train_score":0.7877649534331886,"validation_gamma_lcb":[{"k":4,"gamma_lcb":0.6037083602087207},{"k":6,"gamma_lcb":0.35483711676706625},{"k":8,"gamma_lcb":0.12477431404099655}]},
+    {"iteration":300,"train_headers_seen":21,"train_samples_seen":2688,"unique_genomes_evaluated":2464,"duplicate_proposals":2067,"champion_genome":[24,66,89],"champion_complexity":3,"train_score":0.7725938220599303,"validation_gamma_lcb":[{"k":4,"gamma_lcb":0.5704640137738302},{"k":6,"gamma_lcb":0.5743886435954179},{"k":8,"gamma_lcb":0.23394240961862225}]},
+    {"iteration":400,"train_headers_seen":27,"train_samples_seen":3456,"unique_genomes_evaluated":3264,"duplicate_proposals":2898,"champion_genome":[4,14,47],"champion_complexity":3,"train_score":0.7275289858670732,"validation_gamma_lcb":[{"k":4,"gamma_lcb":0.7589617232123973},{"k":6,"gamma_lcb":0.6353504691435743},{"k":8,"gamma_lcb":0.21632210136827293}]},
+    {"iteration":500,"train_headers_seen":32,"train_samples_seen":4096,"unique_genomes_evaluated":4064,"duplicate_proposals":3902,"champion_genome":[4,14,47],"champion_complexity":3,"train_score":0.75095229042895,"validation_gamma_lcb":[{"k":4,"gamma_lcb":0.7589617232123973},{"k":6,"gamma_lcb":0.6353504691435743},{"k":8,"gamma_lcb":0.21632210136827293}]},
+    {"iteration":600,"train_headers_seen":38,"train_samples_seen":4864,"unique_genomes_evaluated":4864,"duplicate_proposals":5307,"champion_genome":[4,14,47],"champion_complexity":3,"train_score":0.7427835525099674,"validation_gamma_lcb":[{"k":4,"gamma_lcb":0.7589617232123973},{"k":6,"gamma_lcb":0.6353504691435743},{"k":8,"gamma_lcb":0.21632210136827293}]},
+    {"iteration":700,"train_headers_seen":43,"train_samples_seen":5504,"unique_genomes_evaluated":5664,"duplicate_proposals":6821,"champion_genome":[4,14,47],"champion_complexity":3,"train_score":0.7558975355877785,"validation_gamma_lcb":[{"k":4,"gamma_lcb":0.7589617232123973},{"k":6,"gamma_lcb":0.6353504691435743},{"k":8,"gamma_lcb":0.21632210136827293}]},
+    {"iteration":800,"train_headers_seen":49,"train_samples_seen":6272,"unique_genomes_evaluated":6464,"duplicate_proposals":8156,"champion_genome":[4,14,18],"champion_complexity":3,"train_score":0.8140448158239273,"validation_gamma_lcb":[{"k":4,"gamma_lcb":0.6197326424429344},{"k":6,"gamma_lcb":0.4339639703706382},{"k":8,"gamma_lcb":0.17696436738715765}]},
+    {"iteration":900,"train_headers_seen":55,"train_samples_seen":7040,"unique_genomes_evaluated":7264,"duplicate_proposals":9765,"champion_genome":[18,31,51],"champion_complexity":3,"train_score":0.8566897659620295,"validation_gamma_lcb":[{"k":4,"gamma_lcb":0.6044032910355377},{"k":6,"gamma_lcb":0.28055729280823594},{"k":8,"gamma_lcb":0.0443429884720897}]},
+    {"iteration":1000,"train_headers_seen":59,"train_samples_seen":7552,"unique_genomes_evaluated":8064,"duplicate_proposals":11545,"champion_genome":[18,31,51],"champion_complexity":3,"train_score":0.8697109539744067,"validation_gamma_lcb":[{"k":4,"gamma_lcb":0.6044032910355377},{"k":6,"gamma_lcb":0.28055729280823594},{"k":8,"gamma_lcb":0.0443429884720897}]}
+  ],
+  "search": {
+    "unique_genomes_evaluated": 8064,
+    "duplicate_proposals": 11545,
+    "archive_size": 8064,
+    "champion_changes_at_checkpoints": 6
+  },
+  "final_champion": {
+    "genome": [18, 31, 51],
+    "train_score": 0.8697109539744067,
+    "ladder": [
+      {"k":4,"validation":{"n":3200,"marker_n":493,"event_n":210,"marker_event_n":34,"lift":1.0509031198686372,"lift_lcb":0.4911400261441099,"gamma":0.953805524050605,"gamma_lcb":0.4457614228770842,"compute_fraction":0.16974609375},"holdout":{"n":2048,"marker_n":307,"event_n":134,"marker_event_n":26,"lift":1.2943750303855315,"lift_lcb":0.5324153658829088,"gamma":1.1728408318121621,"gamma_lcb":0.48242469603705007,"compute_fraction":0.165435791015625},"qualified":false},
+      {"k":6,"validation":{"n":3200,"marker_n":493,"event_n":55,"marker_event_n":7,"lift":0.8261110086667895,"lift_lcb":0.16649206411300585,"gamma":0.7497829520611708,"gamma_lcb":0.15110912457984008,"compute_fraction":0.16974609375},"holdout":{"n":2048,"marker_n":307,"event_n":26,"marker_event_n":3,"lift":0.7697318967677274,"lift_lcb":0.07639760703216057,"gamma":0.6974586011664041,"gamma_lcb":0.06922432129532793,"compute_fraction":0.165435791015625},"qualified":false},
+      {"k":8,"validation":{"n":3200,"marker_n":493,"event_n":14,"marker_event_n":1,"lift":0.4636337293538104,"lift_lcb":0.015695364688043056,"gamma":0.42079655472820815,"gamma_lcb":0.014245200398030563,"compute_fraction":0.16974609375},"holdout":{"n":2048,"marker_n":307,"event_n":8,"marker_event_n":1,"lift":0.8338762214983714,"lift_lcb":0.02197946026752424,"gamma":0.7555801512636044,"gamma_lcb":0.0199157182870465,"compute_fraction":0.165435791015625},"qualified":false}
+    ],
+    "longest_qualified_run": 0,
+    "promote": false
+  },
+  "promoted_count": 0,
+  "multiple_testing": {
+    "familywise_alpha": 0.05,
+    "per_test_alpha": 0.0010416666666666667,
+    "correction": "BONFERRONI_TOP8_X_LEVELS_X_VALIDATION_HOLDOUT"
+  },
+  "claims": {
+    "cryptographic_advantage_assumed": false,
+    "production_policy_changed": false,
+    "holdout_used_during_training": false,
+    "physical_time_claim": false
+  }
+}
