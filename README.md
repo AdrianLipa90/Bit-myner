@@ -1,10 +1,10 @@
-# Bit-myner v0.2
+# Bit-myner v0.3
 
-High-throughput Bitcoin SHA256d mining kernel with NOEMA fail-closed admission, DNCrypt/PhaseNav 36D scheduler state, GREMLIN-style audited autotuning, and exact non-overlapping nonce sharding.
+High-throughput Bitcoin SHA256d mining kernel with NOEMA fail-closed admission, DNCrypt/PhaseNav 36D scheduler state, GREMLIN-style audited autotuning, exact scalar-tau jitter modulation, and exact non-overlapping nonce sharding.
 
 ## What is optimized
 
-The hot path is no longer Python/Numba. It uses native CPU vector backends:
+The hot path is designed around native CPU vector backends:
 
 - AVX-512: 16 independent SHA256d lanes per vector;
 - AVX-512 ×2: two interleaved 16-lane states (32 nonces per batch) for additional instruction-level parallelism;
@@ -13,9 +13,9 @@ The hot path is no longer Python/Numba. It uses native CPU vector backends:
 - OpenMP thread fan-out;
 - Bitcoin 64-byte first-block midstate reuse;
 - exact full-256-bit target comparison;
-- runtime autotuning over backend × thread count.
+- runtime autotuning over backend × thread count × batch size.
 
-The scheduler never claims that a nonce ordering changes the probability of satisfying SHA256d. Performance claims are only hashes/second, latency, duplicate-work avoidance, and scale-out.
+The scheduler never claims that nonce ordering changes the probability of satisfying SHA256d. Performance claims are limited to hashes/second, latency, duplicate-work avoidance, jitter handling, and scale-out.
 
 ## Formalism bindings
 
@@ -27,7 +27,40 @@ The scheduler never claims that a nonce ordering changes the probability of sati
 
 `Q28` is used only as an exact 28-bit configuration address (`q28_schedule_id`). This is a classical exact schedule identifier, not a physical-QPU speed claim.
 
-`κ = ln(2)/(24π)` is used only as a conservative jitter penalty in autotuning. It does not alter SHA256d or target semantics.
+`κ = ln(2)/(24π)` remains part of candidate metadata, but jitter promotion authority is no longer a κ-weighted CV heuristic.
+
+## Tau modulation of scheduler jitter
+
+The v0.3 autotuner uses the existing Natural Coding scalar-tau pattern: positive rational `TRANSFORM` factors composed multiplicatively.
+
+For measured batch latencies `dt_i`, Bit-myner defines
+
+```text
+m_tau = median(dt_i)
+d_tau = mean_i |dt_i - m_tau|
+
+s_tau,jitter  = m_tau / (m_tau + d_tau)
+s_tau,latency = min(1, B_tau / m_tau)
+s_tau         = s_tau,jitter * s_tau,latency
+```
+
+where `B_tau` is the stale-work latency budget. Nanosecond measurements are converted to exact reduced rational factors. Candidate ranking is
+
+```text
+score = median_hps * s_tau
+```
+
+The previous hard `jitter_cv <= 0.15` promotion gate is removed. CV remains telemetry only. Jitter is therefore continuously modulated through tau instead of being accepted/rejected by an arbitrary fixed threshold. The stale-work latency budget remains a hard operational boundary.
+
+The receipt explicitly records:
+
+```text
+laboratory_time_modified = false
+hydrodynamic_lapse_modified = false
+physical_time_claim = false
+```
+
+This is computational phase-proper-time/scheduler modulation only. It does not change SHA256d, Bitcoin target semantics, nonce probability, or laboratory time.
 
 ## Build requirements
 
@@ -67,7 +100,7 @@ For `N` workers, the PhaseNav mapping is a permutation of worker IDs followed by
 
 ## Correctness boundary
 
-Every backend must recover the Bitcoin genesis nonce `2083236893` and hash
+Every native backend must recover the Bitcoin genesis nonce `2083236893` and hash
 
 ```text
 000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f
