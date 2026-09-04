@@ -1,3 +1,5 @@
+import pytest
+
 from bitmyner.marker_training_v2 import (
     NegativeMemory,
     _genome_distance,
@@ -9,7 +11,7 @@ from bitmyner.marker_training_v2 import (
 def test_genome_distance_and_novelty_are_bounded():
     assert _genome_distance((1, 2), (1, 2)) == 0.0
     assert _genome_distance((1,), (2,)) == 1.0
-    assert _genome_distance((1, 2), (2, 3)) == 2 / 3
+    assert _genome_distance((1, 2), (2, 3)) == pytest.approx(2 / 3)
     n = _novelty_score((1, 2), [(1, 2), (2, 3), (8, 9)], k=2)
     assert 0.0 <= n <= 1.0
 
