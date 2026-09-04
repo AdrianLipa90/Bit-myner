@@ -1,0 +1,73 @@
+{
+  "schema": "BITMYNER_MARKER_GRAPH_VALIDATION_V0_1",
+  "created_utc": "2026-09-04T10:40:41.754671+00:00",
+  "branch": "feat/marker-graph-v0.1",
+  "status": "PASS_IMPLEMENTATION_AND_TESTS",
+  "execution_surface": "CHAT_CONTAINER_CURRENT_HOST",
+  "physical_user_machine_claim": false,
+  "physical_h200_claim": false,
+  "physical_qpu_claim": false,
+  "noema": {
+    "tether_status": "ACTIVE",
+    "failures": [],
+    "guard_schema": "noema.aux-tether-guard/v2"
+  },
+  "implementation": {
+    "sha256_round_tracer": "PASS",
+    "dncrypt_content_addressed_marker_genome": "PASS",
+    "append_only_hash_evidence_graph": "PASS",
+    "computational_vs_association_edge_separation": "PASS",
+    "header_level_train_validation_holdout": "PASS",
+    "wilson_conservative_lift_lcb": "PASS",
+    "belzebub_promotion_gate": "PASS",
+    "gremlin_marker_experiment": "PASS",
+    "production_policy_changed": false
+  },
+  "local_tests": {
+    "pytest": "12/12 PASS",
+    "elapsed_s": 10.04,
+    "genesis_trace": "PASS",
+    "random_hashlib_crosscheck": "100/100 PASS"
+  },
+  "bounded_experiment": {
+    "synthetic_header_fixture": true,
+    "header_count": 15,
+    "nonces_per_header": 512,
+    "sample_count": 7680,
+    "surrogate_event_k": 8,
+    "event_count": 29,
+    "candidate_count": 480,
+    "promoted_count": 0,
+    "graph_node_count": 2056,
+    "graph_edge_count": 2076,
+    "graph_id": "4c6a5fc9bee7aac5d0690cd721f69beecdac9a799979619fd9c7c7d7fe019d2e",
+    "experiment_receipt_blake2b256": "9867804225759d2a328f9f1a8ed0d9c4e02c5cae9d725df4f3771d53279658c9",
+    "top_training_marker": {
+      "genome_id": "7cf770e947055e746fe87615b52cc9ce0dbd02b46232b4c93797d0c3d7ae21da",
+      "train_lift": 2.046362909672262,
+      "train_lift_lcb": 0.8207229919517148,
+      "validation_lift": 1.9768339768339767,
+      "validation_lift_lcb": 0.22983696035649123,
+      "holdout_lift": 1.956687898089172,
+      "holdout_lift_lcb": 0.5049672128500539,
+      "promoted": false,
+      "rejection_reasons": [
+        "HOLDOUT_LCB_NOT_ABOVE_PROMOTION_THRESHOLD",
+        "VALIDATION_LCB_NOT_ABOVE_ONE"
+      ]
+    }
+  },
+  "github_ci": {
+    "workflow": "Bit-myner CI",
+    "run_id": 33864264208,
+    "head_sha": "b1f109292e880a34ac1a81dee98c93bc1b7b2f9e",
+    "status": "completed",
+    "conclusion": "success"
+  },
+  "epistemic_boundary": {
+    "cryptographic_advantage_assumed": false,
+    "marker_lift_established": false,
+    "current_result": "NO_MARKER_PROMOTED_IN_BOUNDED_V0_1_EXPERIMENT",
+    "surrogate_events_are_not_bitcoin_shares_or_blocks": true
+  }
+}
