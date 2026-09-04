@@ -1,0 +1,74 @@
+{
+  "schema": "BITMYNER_MARKER_TRAINING_1000_V0_2_SUMMARY",
+  "status": "PASS_TRAINING_COMPLETE",
+  "branch": "exp/marker-training-1000-v0.2",
+  "source_commit": "3fcf366cf07fdd5b07de30431a3265a6017ba181",
+  "workflow_run_id": 33917235010,
+  "workflow_job_id": 101167113237,
+  "artifact_id": 9953631957,
+  "artifact_zip_sha256": "ad1e1f70c1cd34986076bb919d8f4bc631dcc2dd664aa7bb3d2c83081f02e3b3",
+  "raw_receipt_blake2b256": "37e3e452dbf6c62b160b87da54ec55570f16dc49c46646b70f82b00fce998750",
+  "configuration": {
+    "iterations": 1000,
+    "headers": 100,
+    "nonces_per_header": 128,
+    "samples": 12800,
+    "split_counts": {"train": 7552, "validation": 3200, "holdout": 2048},
+    "thresholds": [4, 6, 8],
+    "population_size": 64,
+    "offspring_per_iteration": 8,
+    "max_predicates": 3,
+    "cohort_count": 4,
+    "cohort_refresh_every": 25,
+    "seed": 616
+  },
+  "search": {
+    "unique_genomes_evaluated": 8064,
+    "duplicate_proposals": 6033,
+    "duplicate_proposal_fraction": 0.4279633964673335,
+    "cohort_refreshes": 40,
+    "root_lineages_created": 2397,
+    "negative_memory_observations": 7927,
+    "champion_changes_at_checkpoints": 9
+  },
+  "final_champion": {
+    "predicate_indices": [12, 14, 118],
+    "train_score": 0.6412825655171376,
+    "robust_core": 0.7193256305328596,
+    "full_train": {
+      "k4": {"gamma": 1.0547352115894921, "gamma_lcb": 0.8175178120086536, "robust_gamma": 0.7930607187112764},
+      "k6": {"gamma": 1.399115040434983, "gamma_lcb": 0.8661024944106457, "robust_gamma": 0.8661024944106457},
+      "k8": {"gamma": 1.986417981826877, "gamma_lcb": 0.7193256305328596, "robust_gamma": 0.7193256305328596}
+    },
+    "validation": {
+      "k4": {"gamma": 0.9927849927849928, "gamma_lcb": 0.49237813845284306},
+      "k6": {"gamma": 1.322314049586777, "gamma_lcb": 0.3780852561897183},
+      "k8": {"gamma": 1.3852813852813852, "gamma_lcb": 0.13323580319000014}
+    },
+    "holdout": {
+      "k4": {"gamma": 0.6792703150912106, "gamma_lcb": 0.20950591159630966},
+      "k6": {"gamma": 0.8752136752136752, "gamma_lcb": 0.08688853547127683},
+      "k8": {"gamma": 1.8962962962962964, "gamma_lcb": 0.08757003257199232}
+    }
+  },
+  "promoted_count": 0,
+  "comparison_to_v0_1": {
+    "v0_1_duplicate_proposal_fraction": 0.5887602631444745,
+    "v0_2_duplicate_proposal_fraction": 0.4279633964673335,
+    "duplicate_fraction_absolute_reduction": 0.160796866677141,
+    "duplicate_fraction_relative_reduction": 0.2731109362210531,
+    "v0_1_mean_abs_train_holdout_gamma_gap": 1.1449617390412508,
+    "v0_2_mean_abs_train_holdout_gamma_gap": 0.32982931575005664,
+    "train_holdout_gap_relative_reduction": 0.711929836165317,
+    "v0_1_mean_abs_validation_holdout_gamma_gap": 0.20204775173057338,
+    "v0_2_mean_abs_validation_holdout_gamma_gap": 0.42387665436059835
+  },
+  "verdict": {
+    "cryptographic_advantage_proven": false,
+    "production_policy_changed": false,
+    "search_space_cycling_reduced": true,
+    "train_only_inflation_reduced": true,
+    "independent_split_stability_established": false,
+    "next_bottleneck": "FINAL_EVALUATION_STATISTICAL_POWER"
+  }
+}
