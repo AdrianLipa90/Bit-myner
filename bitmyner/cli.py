@@ -7,7 +7,18 @@ import time
 
 from .core import build_backend, compact_to_target, read_noema, phasenav_shard
 from .gremlin_marker import run_experiment
+from .gremlin_marker_v2 import run_experiment_v2
 from .tau_exact import autotune_tau_exact
+
+
+def _parse_thresholds(text: str) -> tuple[int, ...]:
+    try:
+        levels = tuple(int(x.strip()) for x in text.split(',') if x.strip())
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError('thresholds must be comma-separated integers') from exc
+    if not levels:
+        raise argparse.ArgumentTypeError('at least one threshold is required')
+    return levels
 
 
 def main() -> int:
@@ -30,6 +41,16 @@ def main() -> int:
     mg.add_argument("--top-k", type=int, default=8)
     mg.add_argument("--seed", type=int, default=616)
     mg.add_argument("--output")
+
+    mg2 = sub.add_parser("marker-benchmark-v2")
+    mg2.add_argument("--headers", type=int, default=21)
+    mg2.add_argument("--nonces-per-header", type=int, default=512)
+    mg2.add_argument("--thresholds", type=_parse_thresholds, default=(6, 8, 10, 12))
+    mg2.add_argument("--seed-top-k", type=int, default=16)
+    mg2.add_argument("--pair-limit", type=int, default=64)
+    mg2.add_argument("--top-k", type=int, default=8)
+    mg2.add_argument("--seed", type=int, default=616)
+    mg2.add_argument("--output")
 
     sh = sub.add_parser("shard")
     sh.add_argument("--worker-id", type=int, required=True)
@@ -64,8 +85,6 @@ def main() -> int:
         print(text)
         return 0 if result.get("status") == "PASS" else 3
     if ns.cmd == "marker-benchmark":
-        # Research-only computation still requires a live NOEMA tether, but no
-        # production mining authorization because it does not actuate a pool/job.
         read_noema(root, require_execution=False)
         result = run_experiment(
             header_count=ns.headers,
@@ -79,6 +98,22 @@ def main() -> int:
             Path(ns.output).write_text(text + "\n")
         print(text)
         return 0 if result.get("status") == "PASS_EXPERIMENT_COMPLETE" else 4
+    if ns.cmd == "marker-benchmark-v2":
+        read_noema(root, require_execution=False)
+        result = run_experiment_v2(
+            header_count=ns.headers,
+            nonces_per_header=ns.nonces_per_header,
+            thresholds=ns.thresholds,
+            seed_top_k=ns.seed_top_k,
+            pair_limit=ns.pair_limit,
+            final_top_k=ns.top_k,
+            seed=ns.seed,
+        )
+        text = json.dumps(result, indent=2)
+        if ns.output:
+            Path(ns.output).write_text(text + "\n")
+        print(text)
+        return 0 if result.get("status") == "PASS_EXPERIMENT_COMPLETE" else 5
     if ns.cmd == "shard":
         noema = read_noema(root, require_execution=False)
         print(json.dumps(phasenav_shard(ns.worker_id, ns.workers, noema.phase36).__dict__, indent=2))
