@@ -40,8 +40,8 @@ def test_composite_genome_is_canonical_and_pair_population_unique():
 
 def test_cost_gamma_and_tau_adjustment_are_exact():
     # 100 baseline samples, 10 events. Marker keeps 20 samples and 5 events.
-    # Total marker-policy round cost = 6400 versus 12800 baseline.
-    rows = [CostObservation(marker=(i < 20), event=(i < 5 or 20 <= i < 25), cost_units=64) for i in range(100)]
+    # Total marker-policy round cost = 3200 versus 12800 baseline.
+    rows = [CostObservation(marker=(i < 20), event=(i < 5 or 20 <= i < 25), cost_units=32) for i in range(100)]
     report = gamma_from_cost_observations(rows, full_cost_units=128)
     assert report.event_n == 10
     assert report.marker_n == 20
