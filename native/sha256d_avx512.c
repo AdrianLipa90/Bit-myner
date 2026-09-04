@@ -31,7 +31,7 @@ uint64_t bm_avx512_scan_bench(const uint8_t *header76,uint32_t start,uint64_t co
 for(uint64_t j=0;j<chunks;j++){V o[8];hash16(mid,t0,t1,t2,start+(uint32_t)(j*16),o);chk^=fold16(o[0]);chk^=fold16(o[7]);}return chk^count;}
 int bm_avx512_scan_target(const uint8_t *header76,uint32_t start,uint64_t count,const uint8_t *target_le,int threads,uint32_t *found_nonce,uint8_t *found_hash){uint32_t mid[8];bm_header_midstate(header76,mid);uint32_t t0=bm_be32(header76+64),t1=bm_be32(header76+68),t2=bm_be32(header76+72);uint64_t chunks=count/16,best=UINT64_MAX;
 #pragma omp parallel for schedule(static) num_threads(threads>0?threads:1)
-for(uint64_t j=0;j<chunks;j++){if(j*16>=best)continue;V o[8];hash16(mid,t0,t1,t2,start+(uint32_t)(j*16),o);uint32_t words[8][16];for(int k=0;k<8;k++)_mm512_storeu_si512((void*)words[k],o[k]);for(int l=0;l<16;l++){uint8_t h[32];for(int k=0;k<8;k++)bm_putbe32(h+4*k,words[k][l]);if(bm_hash_le_target(h,target_le)){uint64_t off=j*16+(uint64_t)l;
+for(uint64_t j=0;j<chunks;j++){V o[8];hash16(mid,t0,t1,t2,start+(uint32_t)(j*16),o);uint32_t words[8][16];for(int k=0;k<8;k++)_mm512_storeu_si512((void*)words[k],o[k]);for(int l=0;l<16;l++){uint8_t h[32];for(int k=0;k<8;k++)bm_putbe32(h+4*k,words[k][l]);if(bm_hash_le_target(h,target_le)){uint64_t off=j*16+(uint64_t)l;
 #pragma omp critical(bitmyner_best_avx512)
 {if(off<best)best=off;}}}}
 if(best==UINT64_MAX)return 0;*found_nonce=start+(uint32_t)best;bm_sha256d_one(header76,*found_nonce,found_hash);return 1;}
