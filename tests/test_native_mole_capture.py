@@ -6,6 +6,7 @@ import pytest
 
 from bitmyner.core import GENESIS_HEADER76, build_backend, read_cpu_flags, sha256d
 from bitmyner.mole_ring import bitcoin_leading_zero_bits
+from bitmyner.native_events import scan_events
 
 
 def _backend_or_skip(tmp_path):
@@ -22,7 +23,8 @@ def test_native_mole_capture_matches_scalar_threshold_events(tmp_path):
     start = 0x12340000
     count = 4096
     threshold = 4
-    events, total_hits = backend.scan_events(
+    events, total_hits = scan_events(
+        backend,
         GENESIS_HEADER76,
         start,
         count,
@@ -42,7 +44,8 @@ def test_native_mole_capture_matches_scalar_threshold_events(tmp_path):
 
 def test_native_mole_capture_is_bounded_but_counts_all_hits(tmp_path):
     backend = _backend_or_skip(tmp_path)
-    events, total_hits = backend.scan_events(
+    events, total_hits = scan_events(
+        backend,
         GENESIS_HEADER76,
         0,
         8192,
@@ -59,6 +62,6 @@ def test_native_mole_capture_is_bounded_but_counts_all_hits(tmp_path):
 def test_native_mole_capture_rejects_invalid_threshold(tmp_path):
     backend = _backend_or_skip(tmp_path)
     with pytest.raises(ValueError):
-        backend.scan_events(GENESIS_HEADER76, 0, 32, threshold_bits=0, threads=1, capacity=4)
+        scan_events(backend, GENESIS_HEADER76, 0, 32, threshold_bits=0, threads=1, capacity=4)
     with pytest.raises(ValueError):
-        backend.scan_events(GENESIS_HEADER76, 0, 32, threshold_bits=33, threads=1, capacity=4)
+        scan_events(backend, GENESIS_HEADER76, 0, 32, threshold_bits=33, threads=1, capacity=4)
