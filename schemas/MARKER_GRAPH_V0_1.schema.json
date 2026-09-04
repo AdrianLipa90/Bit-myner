@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "BITMYNER_HASH_EVIDENCE_GRAPH_V0_1",
+  "type": "object",
+  "required": ["schema", "nodes", "edges"],
+  "properties": {
+    "schema": {"const": "BITMYNER_HASH_EVIDENCE_GRAPH_V0_1"},
+    "nodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "type", "payload"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^n:"},
+          "type": {"enum": ["JOB","HEADER","NONCE","ROUND_STATE","MESSAGE_WORD","FEATURE","MARKER","THRESHOLD_EVENT","SHARE","BLOCK","TAU_COST","GENOME","HASH"]},
+          "payload": {"type": "object"}
+        },
+        "additionalProperties": false
+      }
+    },
+    "edges": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "type", "source", "target", "payload"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^e:"},
+          "type": {"enum": ["COMPUTATIONAL_EDGE","ASSOCIATION_EDGE","EVIDENCE_EDGE","DERIVATION_EDGE"]},
+          "source": {"type": "string", "pattern": "^n:"},
+          "target": {"type": "string", "pattern": "^n:"},
+          "payload": {"type": "object"}
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
