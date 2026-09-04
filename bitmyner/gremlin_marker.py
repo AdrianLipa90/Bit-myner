@@ -6,7 +6,7 @@ import random
 from typing import Sequence
 
 from .dncrypt_marker import raven_single_bit_population
-from .marker_eval import TraceSample, raven_rank, belzebub_promotion_verdict
+from .marker_eval import TraceSample, raven_rank_train, evaluate_genome, belzebub_promotion_verdict
 from .marker_graph import HashEvidenceGraph, append_trace_evidence, append_marker_association
 from .sha256_trace import sha256d_trace
 
@@ -71,6 +71,7 @@ def _graph_for_selected_samples(samples: Sequence[TraceSample], *, event_k: int,
             nonce=sample.trace.nonce,
             digest=sample.trace.digest,
             leading_zero_bits=sample.trace.leading_zero_bits,
+            first_digest=sample.trace.first_digest,
             round_records=sample.trace.stage1 + sample.trace.stage2,
             event_k=event_k,
         )
@@ -86,6 +87,8 @@ def run_experiment(
     seed: int = 616,
     split_seed: str = 'bitmyner-marker-v0.1',
 ) -> dict:
+    if top_k < 1:
+        raise ValueError('top_k must be positive')
     headers = deterministic_headers(header_count, seed=seed)
     samples = collect_samples(headers, nonces_per_header=nonces_per_header, event_k=event_k)
     candidates = raven_single_bit_population(
@@ -94,14 +97,18 @@ def run_experiment(
         sources=('a', 'e', 't1', 'w'),
         bits=(0, 7, 15, 23, 31),
     )
-    ranked = raven_rank(candidates, samples, seed=split_seed, min_marker_n=32, top_k=top_k)
+    ranked_train = raven_rank_train(candidates, samples, seed=split_seed, min_marker_n=32, top_k=top_k)
+    alpha_family = 0.05
+    alpha_per_candidate = alpha_family / max(1, len(ranked_train))
 
     ranked_payload = []
     promoted = []
-    for genome, evaluation in ranked:
+    for genome, training_rank_report in ranked_train:
+        evaluation = evaluate_genome(genome, samples, seed=split_seed, alpha=alpha_per_candidate)
         verdict = belzebub_promotion_verdict(evaluation, min_holdout_marker_n=32)
         entry = {
             'genome': genome.to_dict(),
+            'training_rank_report': training_rank_report,
             'evaluation': evaluation,
             'verdict': verdict,
         }
@@ -114,7 +121,7 @@ def run_experiment(
         top = ranked_payload[0]
         event_nodes = [n.node_id for n in graph.nodes if n.node_type == 'THRESHOLD_EVENT']
         if event_nodes:
-            train = top['evaluation']['reports']['train'] or {}
+            train = top['training_rank_report'] or {}
             append_marker_association(
                 graph,
                 genome=top['genome'],
@@ -141,6 +148,13 @@ def run_experiment(
         },
         'candidate_count': len(candidates),
         'top_k': ranked_payload,
+        'multiple_testing': {
+            'familywise_alpha': alpha_family,
+            'tested_holdout_candidates': len(ranked_train),
+            'per_candidate_alpha': alpha_per_candidate,
+            'correction': 'BONFERRONI_OVER_SELECTED_TOP_K',
+            'holdout_used_for_ranking': False,
+        },
         'promoted_count': len(promoted),
         'promotion_semantics': {
             'cryptographic_advantage_assumed': False,
