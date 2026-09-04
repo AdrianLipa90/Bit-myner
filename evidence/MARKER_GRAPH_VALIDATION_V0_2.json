@@ -1,0 +1,101 @@
+{
+  "schema": "BITMYNER_MARKER_GRAPH_VALIDATION_V0_2",
+  "created_utc": "2026-09-04T19:52:00Z",
+  "branch": "feat/marker-graph-v0.2",
+  "source_head_sha": "2db5f67d0a4d7abb70605d4e30e4b833809d705f",
+  "status": "PASS_IMPLEMENTATION_AND_CI_EXPERIMENT",
+  "ci": {
+    "workflow": "Bit-myner CI",
+    "run_id": 33913266725,
+    "job_id": 101154489291,
+    "conclusion": "success",
+    "pytest": "26/26 PASS",
+    "pytest_elapsed_s": 13.00,
+    "artifact_id": 9952179309,
+    "artifact_name": "marker-v02-ci",
+    "artifact_zip_sha256": "f4cd06ec2695b0505e7b496c30e386a63d8dac4f6a18187563aef5074ba96945",
+    "artifact_json_sha256": "805d698ee5b24015ec8af5db5e1e312ac903bf17846b19e67c0792b4070b27c1"
+  },
+  "experiment": {
+    "schema": "BITMYNER_MARKER_GRAPH_EXPERIMENT_V0_2",
+    "status": "PASS_EXPERIMENT_COMPLETE",
+    "synthetic_header_fixture": true,
+    "header_count": 15,
+    "nonces_per_header": 256,
+    "sample_count": 3840,
+    "thresholds": [4, 6, 8],
+    "single_candidates": 480,
+    "training_seed_candidates": 8,
+    "composite_candidates": 24,
+    "final_candidate_pool": 32,
+    "selected_count": 4,
+    "promoted_count": 0,
+    "familywise_alpha": 0.05,
+    "test_count_validation_plus_holdout": 24,
+    "per_test_alpha": 0.0020833333333333333,
+    "multiple_testing_correction": "BONFERRONI_SELECTED_CANDIDATES_X_LEVELS_X_2",
+    "holdout_used_for_ranking": false,
+    "validation_used_for_ranking": false,
+    "experiment_receipt_blake2b256": "701c805b206a05761ba632d7117b679719a630f0df66408ef50d3d4d5952895b"
+  },
+  "mole_mantis": {
+    "hot_path_round_tracing": false,
+    "observed": 3840,
+    "event_counts_bounded_ring": {
+      "4": 64,
+      "6": 64,
+      "8": 16
+    },
+    "control_count": 13,
+    "deduplicated_replay_count": 126,
+    "mantis_replayed_into_graph": 24,
+    "graph_schema": "BITMYNER_HASH_EVIDENCE_GRAPH_V0_1",
+    "graph_node_count": 3086,
+    "graph_edge_count": 3126,
+    "graph_id": "528dffa477d4a8352a7233d6d49bf6e93f02108fb102cfd60b23ebd483217387"
+  },
+  "top_training_selected_candidate": {
+    "genome_id": "fd76c455faa42e262aeb3f0af6882e83f98ce163445abc7e079f0282c2575775",
+    "mode": "all",
+    "predicates": [
+      "stage1.round0.w bit23 == 1",
+      "stage2.round7.t1 bit0 == 1"
+    ],
+    "training_base_k4_lift": 1.6440153033339406,
+    "training_base_k4_lift_lcb_alpha_0_05": 1.0597043888565245,
+    "validation": {
+      "k4_gamma": 0.665804893529735,
+      "k4_gamma_lcb": 0.2236462363664116,
+      "k6_gamma": 0.7221693289608238,
+      "k6_gamma_lcb": 0.07633526124603034,
+      "k8_gamma": 0.7799428752776896,
+      "k8_gamma_lcb": 0.04443316792779315
+    },
+    "holdout": {
+      "k4_gamma": 0.6235288521002806,
+      "k4_gamma_lcb": 0.2362805386666315,
+      "k6_gamma": 0.9499072356215214,
+      "k6_gamma_lcb": 0.16983145335791866,
+      "k8_gamma": 1.68872397443826,
+      "k8_gamma_lcb": 0.0393303146747785
+    },
+    "longest_qualified_consecutive_level_run": 0,
+    "promoted": false
+  },
+  "tau_cost": {
+    "round_cost_model": "EXACT_SHA256D_128_ROUND_UNITS",
+    "runtime_tau_measurement_available": false,
+    "tau_adjustment": "IDENTITY_UNTIL_MEASURED_RUNTIME_LATENCY_RECEIPT",
+    "laboratory_time_modified": false,
+    "physical_time_claim": false
+  },
+  "epistemic_boundary": {
+    "cryptographic_advantage_assumed": false,
+    "marker_probability_advantage_established": false,
+    "cost_adjusted_production_gain_established": false,
+    "surrogate_events_are_not_bitcoin_shares_or_blocks": true,
+    "production_policy_changed": false,
+    "current_result": "NO_MARKER_PROMOTED_IN_BOUNDED_V0_2_EXPERIMENT",
+    "note": "The top candidate reached holdout raw Gamma > 1 at k=8, but its conservative cost-adjusted lower bound was 0.03933 and it failed persistence; this is not evidence of a deployable gain."
+  }
+}
