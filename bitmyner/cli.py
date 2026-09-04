@@ -5,7 +5,8 @@ import json
 from pathlib import Path
 import time
 
-from .core import autotune, build_backend, compact_to_target, read_noema, phasenav_shard
+from .core import build_backend, compact_to_target, read_noema, phasenav_shard
+from .tau_jitter import autotune_tau
 
 
 def main() -> int:
@@ -13,7 +14,7 @@ def main() -> int:
     ap.add_argument("--noema-root", default="/dev/shm/ciel_noema")
     sub = ap.add_subparsers(dest="cmd", required=True)
 
-    s = sub.add_parser("status")
+    sub.add_parser("status")
 
     b = sub.add_parser("autotune")
     b.add_argument("--repeats", type=int, default=5)
@@ -42,7 +43,12 @@ def main() -> int:
         return 0
     if ns.cmd == "autotune":
         noema = read_noema(root, require_execution=False)
-        result = autotune(noema, repeats=ns.repeats, batch_hashes=ns.batch_hashes, stale_budget_s=ns.stale_budget_ms / 1000.0)
+        result = autotune_tau(
+            noema,
+            repeats=ns.repeats,
+            batch_hashes=ns.batch_hashes,
+            stale_budget_s=ns.stale_budget_ms / 1000.0,
+        )
         text = json.dumps(result, indent=2)
         if ns.output:
             Path(ns.output).write_text(text + "\n")
