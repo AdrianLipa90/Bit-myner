@@ -3,6 +3,7 @@
 #include <stddef.h>
 #include <string.h>
 #include <limits.h>
+#include <stdlib.h>
 #include <omp.h>
 #include "sha256_common.h"
 typedef __m512i V;
@@ -55,4 +56,80 @@ if(best==UINT64_MAX){return 0;}
  *fn=start+(uint32_t)best;
  bm_sha256d_one(h,*fn,fh);
  return 1;
+}
+
+typedef struct { uint64_t off; uint8_t hash[32]; } bm_event_row;
+static int bm_event_cmp(const void *a,const void *b){
+ const bm_event_row *x=(const bm_event_row*)a,*y=(const bm_event_row*)b;
+ return x->off<y->off?-1:(x->off>y->off?1:0);
+}
+static inline int bm_word7_lz(uint32_t h7){
+ uint32_t display_prefix=bm_bswap32(h7);
+ return display_prefix?__builtin_clz(display_prefix):32;
+}
+
+/*
+ * Bounded MOLE capture for surrogate thresholds k<=32.
+ *
+ * The full AVX512x2 SHA256d result is computed exactly as in scan_bench.
+ * Every chunk stores only word 7 first; the other seven words are materialized
+ * only when at least one lane passes the low-hash threshold. Captured rows are
+ * merged by nonce offset after the OpenMP barrier, so output order is stable.
+ * Return value is the exact number of threshold hits in the aligned scan,
+ * independent of capture capacity. UINT64_MAX signals allocation failure.
+ */
+uint64_t bm_avx512x2_scan_events(
+ const uint8_t*h,uint32_t start,uint64_t count,int threshold_bits,int threads,
+ uint32_t capacity,uint32_t*out_count,uint32_t*out_nonces,uint8_t*out_hashes){
+ if(!out_count||threshold_bits<1||threshold_bits>32)return UINT64_MAX;
+ const int nt=threads>0?threads:1;
+ const uint64_t chunks=count/32;
+ uint32_t mid[8];bm_header_midstate(h,mid);
+ uint32_t t0=bm_be32(h+64),t1=bm_be32(h+68),t2=bm_be32(h+72);
+ uint32_t *local_counts=(uint32_t*)calloc((size_t)nt,sizeof(uint32_t));
+ uint64_t *local_hits=(uint64_t*)calloc((size_t)nt,sizeof(uint64_t));
+ size_t slots=(size_t)nt*(size_t)capacity;
+ bm_event_row *local_rows=slots?(bm_event_row*)malloc(slots*sizeof(bm_event_row)):NULL;
+ if(!local_counts||!local_hits||(slots&&!local_rows)){free(local_counts);free(local_hits);free(local_rows);return UINT64_MAX;}
+#pragma omp parallel num_threads(nt)
+ {
+  int tid=omp_get_thread_num();
+  uint32_t kept=0;uint64_t hits=0;
+#pragma omp for schedule(static)
+  for(uint64_t j=0;j<chunks;j++){
+   V a[8],b[8];hash32(mid,t0,t1,t2,start+(uint32_t)(j*32),a,b);
+   uint32_t a7[16],b7[16];_mm512_storeu_si512((void*)a7,a[7]);_mm512_storeu_si512((void*)b7,b[7]);
+   uint32_t mask=0;
+   for(int l=0;l<16;l++){if(bm_word7_lz(a7[l])>=threshold_bits)mask|=(1u<<l);}
+   for(int l=0;l<16;l++){if(bm_word7_lz(b7[l])>=threshold_bits)mask|=(1u<<(l+16));}
+   if(!mask)continue;
+   uint32_t wa[8][16],wb[8][16];int words_ready=0;
+   for(int l=0;l<32;l++){
+    if(!(mask&(1u<<l)))continue;
+    hits++;
+    if(kept>=capacity)continue;
+    if(!words_ready){for(int k=0;k<8;k++){_mm512_storeu_si512((void*)wa[k],a[k]);_mm512_storeu_si512((void*)wb[k],b[k]);}words_ready=1;}
+    bm_event_row *row=&local_rows[(size_t)tid*capacity+kept++];
+    row->off=j*32u+(uint64_t)l;
+    uint32_t(*w)[16]=l<16?wa:wb;int q=l<16?l:l-16;
+    for(int k=0;k<8;k++)bm_putbe32(row->hash+4*k,w[k][q]);
+   }
+  }
+  local_counts[tid]=kept;local_hits[tid]=hits;
+ }
+ uint64_t total_hits=0;size_t merged_n=0;
+ for(int t=0;t<nt;t++){total_hits+=local_hits[t];merged_n+=local_counts[t];}
+ bm_event_row *merged=merged_n?(bm_event_row*)malloc(merged_n*sizeof(bm_event_row)):NULL;
+ if(merged_n&&!merged){free(local_counts);free(local_hits);free(local_rows);return UINT64_MAX;}
+ size_t pos=0;
+ for(int t=0;t<nt;t++)for(uint32_t i=0;i<local_counts[t];i++)merged[pos++]=local_rows[(size_t)t*capacity+i];
+ if(merged_n>1)qsort(merged,merged_n,sizeof(bm_event_row),bm_event_cmp);
+ uint32_t emit=(uint32_t)(merged_n<(size_t)capacity?merged_n:(size_t)capacity);
+ for(uint32_t i=0;i<emit;i++){
+  if(out_nonces)out_nonces[i]=start+(uint32_t)merged[i].off;
+  if(out_hashes)memcpy(out_hashes+(size_t)i*32,merged[i].hash,32);
+ }
+ *out_count=emit;
+ free(merged);free(local_rows);free(local_hits);free(local_counts);
+ return total_hits;
 }
