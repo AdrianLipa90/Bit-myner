@@ -57,6 +57,7 @@
       "backend": "avx512x2",
       "threads": 5,
       "batch_hashes": 1600000,
+      "trials_latency_ns": [16312528, 13381188, 13346318],
       "median_hps": 119570848.2684796,
       "tau_scalar_num": 20071782,
       "tau_scalar_den": 21554887,
@@ -66,8 +67,11 @@
       "backend": "avx512x2",
       "threads": 4,
       "batch_hashes": 3200000,
-      "median_hps": 97496000.0,
-      "tau_modulated_hps": 93937000.0
+      "trials_latency_ns": [35436659, 32821857, 31706026],
+      "median_hps": 97496007.00533184,
+      "tau_scalar_num": 98465571,
+      "tau_scalar_den": 102196204,
+      "tau_modulated_hps": 93936952.88329887
     },
     "scope_note": "Measurements are evidence for this current host only; they are not a claim about the user's physical machine or a mining-pool deployment."
   },
