@@ -115,7 +115,13 @@ def evaluate_genome(
     }
 
 
-def raven_rank(
+def samples_for_split(samples: Sequence[TraceSample], split: str, *, seed: str = 'bitmyner-marker-v0.1') -> list[TraceSample]:
+    if split not in {'train', 'validation', 'holdout'}:
+        raise ValueError('split must be train, validation, or holdout')
+    return [s for s in samples if split_name(s.header_id, seed=seed) == split]
+
+
+def raven_rank_train(
     genomes: Sequence[MarkerGenome],
     samples: Sequence[TraceSample],
     *,
@@ -124,13 +130,21 @@ def raven_rank(
     min_marker_n: int = 32,
     top_k: int = 8,
 ) -> list[tuple[MarkerGenome, dict]]:
+    """Rank candidates using training headers only.
+
+    Validation and holdout rows are deliberately not evaluated here. HOUND
+    receives only the already-selected top-K genomes in a separate phase.
+    """
+    train_samples = samples_for_split(samples, 'train', seed=seed)
     ranked: list[tuple[float, float, MarkerGenome, dict]] = []
     for genome in genomes:
-        result = evaluate_genome(genome, samples, seed=seed, alpha=alpha)
-        train = result['reports']['train']
-        if not train or train['marker_n'] < min_marker_n or train['event_n'] == 0:
+        rows = observations_for_genome(genome, train_samples)
+        if not rows:
             continue
-        ranked.append((train['lift_lcb'], train['lift'], genome, result))
+        report = lift_report(rows, alpha=alpha).to_dict()
+        if report['marker_n'] < min_marker_n or report['event_n'] == 0:
+            continue
+        ranked.append((report['lift_lcb'], report['lift'], genome, report))
     ranked.sort(key=lambda x: (x[0], x[1], x[2].genome_id), reverse=True)
     return [(g, r) for _, _, g, r in ranked[:top_k]]
 
