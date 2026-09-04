@@ -24,3 +24,39 @@ jobs:
         run: python -m compileall -q bitmyner tests
       - name: Test
         run: pytest -q
+      - name: Marker Graph v0.2 bounded receipt
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from bitmyner.gremlin_marker_v2 import run_experiment_v2
+
+          result = run_experiment_v2(
+              header_count=15,
+              nonces_per_header=256,
+              thresholds=(4, 6, 8),
+              seed_top_k=8,
+              pair_limit=24,
+              final_top_k=4,
+              seed=616,
+          )
+          Path('marker-v02-ci.json').write_text(json.dumps(result, indent=2) + '\n')
+          summary = {
+              'status': result['status'],
+              'thresholds': result['thresholds'],
+              'sample_count': result['fixture']['sample_count'],
+              'candidate_generation': result['candidate_generation'],
+              'selected_count': result['selection']['selected_count'],
+              'promoted_count': result['promoted_count'],
+              'receipt_blake2b256': result['receipt_blake2b256'],
+          }
+          print(json.dumps(summary, indent=2))
+          if result['status'] != 'PASS_EXPERIMENT_COMPLETE':
+              raise SystemExit(4)
+          PY
+      - name: Upload Marker Graph v0.2 receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: marker-v02-ci
+          path: marker-v02-ci.json
+          if-no-files-found: error
