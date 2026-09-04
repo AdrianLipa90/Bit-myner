@@ -79,7 +79,7 @@ The research loop is:
 MOLE -> MANTIS -> RAVEN -> DNCrypt -> HOUND -> OWL -> BELZEBUB
 ```
 
-MOLE captures selected low-hash events and controls. MANTIS deterministically replays those exact `(header, nonce)` pairs with a full nonce-dependent SHA256d round trace. RAVEN searches candidate motifs. DNCrypt stores marker candidates as content-addressed genomes. HOUND performs header-level validation/holdout falsification. OWL reports lift/support/confidence. BELZEBUB is the only marker-promotion gate.
+MOLE captures selected low-hash events and controls. MANTIS deterministically replays those exact `(header, nonce)` pairs with a full nonce-dependent SHA256d round trace. RAVEN searches candidate motifs on training headers only. DNCrypt stores marker candidates as content-addressed genomes. HOUND evaluates only the already-selected top-K candidates on header-separated validation and holdout sets. OWL reports lift/support/confidence. BELZEBUB is the only marker-promotion gate.
 
 For surrogate threshold `k`:
 
@@ -88,7 +88,9 @@ Y_k = 1[H < 2^(256-k)]
 L_k(g) = P(Y_k=1 | M_g=1) / P(Y_k=1)
 ```
 
-Train/validation/holdout splitting is performed by header identity, not nonce. A training correlation is never stored as a computational SHA dependency: `COMPUTATIONAL_EDGE` and `ASSOCIATION_EDGE` are separate graph types.
+The raw SHA256d digest is interpreted with Bitcoin's little-endian PoW numerical convention, equivalently counting leading zero bits on the reversed/display hash. Train/validation/holdout splitting is performed by header identity, not nonce. RAVEN never sees validation or holdout during ranking; HOUND applies a Bonferroni familywise correction across the selected top-K before BELZEBUB receives the evidence. A training correlation is never stored as a computational SHA dependency: `COMPUTATIONAL_EDGE` and `ASSOCIATION_EDGE` are separate graph types.
+
+The v0.1 evidence graph also represents the first-SHA -> second-SHA transition explicitly through the serialized first digest, rather than treating the two compression stages as one uninterrupted round chain.
 
 The v0.1 implementation does not instrument every AVX512x2 hash. It replays selected events out of band, preserving the mining hot path. No cryptographic advantage is assumed and no marker modifies production policy until independent validation and holdout lower-confidence-bound gates pass.
 
@@ -115,7 +117,7 @@ Every admitted native backend must recover the Bitcoin genesis nonce `2083236893
 
 The rolling AVX-512 ×2 kernel was additionally checked against scalar Python SHA256d on 100 independent nonce cases with 4 native threads: `100/100 PASS` on the validation host. Target-hit aggregation was made race-free by restricting shared best-offset mutation to an OpenMP critical section.
 
-Marker Graph adds a separate reference tracer. It is tested against `hashlib` on the genesis header and 100 deterministic random header/nonce pairs before any marker evaluation is trusted.
+Marker Graph adds a separate reference tracer. It is tested against `hashlib` on the genesis header and 100 deterministic random header/nonce pairs before any marker evaluation is trusted; the genesis fixture yields 43 Bitcoin-order leading zero bits.
 
 ## Fresh v0.5 host evidence
 
