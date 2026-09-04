@@ -1,0 +1,68 @@
+name: Marker External Evaluation v0.3
+
+on:
+  push:
+    branches:
+      - exp/marker-external-eval-v0.3
+    paths:
+      - .github/workflows/marker-external-eval-v03.yml
+  workflow_dispatch:
+
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      PYTHONHASHSEED: '0'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install package
+        run: python -m pip install -e '.[test]'
+      - name: Frozen evaluator regression gate
+        run: pytest -q tests/test_marker_power.py tests/test_fixed_marker_eval.py
+      - name: Evaluate frozen v0.2 champion on 51200 fresh samples
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from bitmyner.fixed_marker_eval import run_frozen_external_evaluation
+          from bitmyner.marker_power import plan_threshold_power
+
+          power = plan_threshold_power((4, 6, 8), desired_events=200)
+          assert power['minimum_common_samples'] == 51200
+
+          result = run_frozen_external_evaluation(
+              predicate_indices=(12, 14, 118),
+              header_count=200,
+              nonces_per_header=256,
+              thresholds=(4, 6, 8),
+              external_seed=20260904,
+              training_seed=616,
+              training_header_count=100,
+              nonce_seed=0xA17E5EED,
+              familywise_alpha=0.05,
+          )
+          result['preregistered_power_plan'] = power
+          Path('MARKER_EXTERNAL_EVAL_V0_3.json').write_text(json.dumps(result, indent=2) + '\n')
+          print(json.dumps({
+              'status': result['status'],
+              'receipt_blake2b256': result['receipt_blake2b256'],
+              'sample_count': result['fixture']['sample_count'],
+              'header_overlap': result['fixture']['header_overlap_with_training_fixture'],
+              'levels': result['levels'],
+              'any_external_evidence_pass': result['any_external_evidence_pass'],
+          }, indent=2))
+          if result['status'] != 'PASS_EXTERNAL_EVALUATION_COMPLETE':
+              raise SystemExit(4)
+          if result['fixture']['header_overlap_with_training_fixture'] != 0:
+              raise SystemExit(5)
+          PY
+      - name: Upload frozen external evaluation receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: marker-external-eval-v03
+          path: MARKER_EXTERNAL_EVAL_V0_3.json
+          if-no-files-found: error
