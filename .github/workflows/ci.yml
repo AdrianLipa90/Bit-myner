@@ -60,3 +60,17 @@ jobs:
           name: marker-v02-ci
           path: marker-v02-ci.json
           if-no-files-found: error
+      - name: Upload tested source snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: bitmyner-v07-tested-source
+          path: |
+            bitmyner/
+            native/
+            tests/
+            docs/
+            schemas/
+            evidence/
+            pyproject.toml
+            README.md
+          if-no-files-found: error
