@@ -1,0 +1,81 @@
+{
+  "schema": "BITMYNER_TAU_NATIVE_VALIDATION_V0_4",
+  "created_utc": "2026-09-04T07:00:21.168712+00:00",
+  "status": "PASS_HOST_VALIDATION",
+  "branch": "perf/tau-jitter-v0.3",
+  "execution_surface": "CHAT_CONTAINER_CURRENT_HOST",
+  "physical_user_machine_claim": false,
+  "physical_h200_claim": false,
+  "physical_qpu_claim": false,
+  "noema": {
+    "tether_status": "ACTIVE",
+    "guard_failures": [],
+    "supervisor_status": "ACTIVE",
+    "authority": "OBSERVE_AND_PLAN_ONLY",
+    "execution_authorized": false,
+    "phi_size_bytes": 288,
+    "aux_phi_size_bytes": 288,
+    "aux_feedback_phi_size_bytes": 288,
+    "phi_sha256": "e7605aa013e26f7842707cead927f27b4cf4a742291f6af80f86b92d3d5ca9a7",
+    "aux_phi_sha256": "af6d6caff68e67136da088ec27ebdfa3857c27bf6c19c356c73209a786eb9469",
+    "aux_feedback_phi_sha256": "af6d6caff68e67136da088ec27ebdfa3857c27bf6c19c356c73209a786eb9469"
+  },
+  "correctness": {
+    "genesis_recovery": {
+      "avx2": "PASS",
+      "avx512": "PASS",
+      "avx512x2": "PASS",
+      "shani": "PASS",
+      "nonce": 2083236893,
+      "hash": "000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f"
+    },
+    "random_scalar_crosscheck": {
+      "header_fixture": "02000000 + 11*32 + 22*32 + 78563412 + ffff001d",
+      "threads": 4,
+      "cases_per_backend": 50,
+      "avx2": "50/50 PASS",
+      "avx512": "50/50 PASS",
+      "avx512x2": "50/50 PASS",
+      "shani": "50/50 PASS"
+    },
+    "target_parallel_data_race_removed": true
+  },
+  "tau_definition": {
+    "median": "m_tau=median(dt_i)",
+    "dispersion": "d_tau=mean(abs(dt_i-m_tau))",
+    "jitter_transform": "s_tau_jitter=m_tau/(m_tau+d_tau)",
+    "latency_transform": "s_tau_latency=min(1,B_tau/m_tau)",
+    "composition": "s_tau=s_tau_jitter*s_tau_latency",
+    "exact_promotion_score": "H_tau=batch_hashes*1e9/(m_tau+d_tau)*s_tau_latency",
+    "jitter_cv_role": "TELEMETRY_ONLY_NO_PROMOTION_AUTHORITY"
+  },
+  "benchmark": {
+    "stale_budget_ms": 200.0,
+    "trials_per_configuration": 3,
+    "raw_local_receipt_sha256": "559c9d208715331a8304ec194d1c179dd672c054a8ab72dbb59bfb7bd36f868a",
+    "winner": {
+      "backend": "avx512x2",
+      "threads": 5,
+      "batch_hashes": 1600000,
+      "median_hps": 119570848.2684796,
+      "tau_scalar_num": 20071782,
+      "tau_scalar_den": 21554887,
+      "tau_modulated_hps": 111343659.56082258
+    },
+    "stable_alternative": {
+      "backend": "avx512x2",
+      "threads": 4,
+      "batch_hashes": 3200000,
+      "median_hps": 97496000.0,
+      "tau_modulated_hps": 93937000.0
+    },
+    "scope_note": "Measurements are evidence for this current host only; they are not a claim about the user's physical machine or a mining-pool deployment."
+  },
+  "semantic_boundaries": {
+    "laboratory_time_modified": false,
+    "hydrodynamic_lapse_modified": false,
+    "physical_time_claim": false,
+    "nonce_probability_modified": false,
+    "sha256d_semantics_modified": false
+  }
+}
