@@ -9,6 +9,7 @@ import time
 
 from .core import (
     Candidate,
+    GENESIS_HEADER76,
     NativeBackend,
     NoemaStatus,
     available_backend_names,
@@ -69,7 +70,10 @@ def _median_fraction(values: list[int] | tuple[int, ...]) -> Fraction:
     return Fraction(ordered[mid - 1] + ordered[mid], 2)
 
 
-def tau_modulation_from_latencies_ns(latencies_ns: list[int] | tuple[int, ...], stale_budget_s: float) -> TauModulation:
+def tau_modulation_from_latencies_ns(
+    latencies_ns: list[int] | tuple[int, ...],
+    stale_budget_s: float,
+) -> TauModulation:
     """Map measured scheduling jitter into exact PNCS scalar-tau factors.
 
     Bit-myner project definition:
@@ -80,10 +84,10 @@ def tau_modulation_from_latencies_ns(latencies_ns: list[int] | tuple[int, ...], 
         s_tau,latency = min(1, B_tau / m_tau)
         s_tau = s_tau,jitter * s_tau,latency
 
-    All transforms are positive reduced rationals and therefore compose under
-    the existing Natural Coding TRANSFORM -> COMPOSITION rule.  This changes
-    only computational scheduling/ranking; it does not modify laboratory time,
-    SHA256d, targets, nonce semantics, or physical time.
+    The transforms are positive reduced rationals and compose under the existing
+    Natural Coding TRANSFORM -> COMPOSITION rule. This changes computational
+    scheduling/ranking only. It does not alter SHA256d, target semantics, nonce
+    semantics, laboratory time, hydrodynamic lapse, or physical time.
     """
     vals = tuple(int(v) for v in latencies_ns)
     if not vals or any(v <= 0 for v in vals):
@@ -92,7 +96,10 @@ def tau_modulation_from_latencies_ns(latencies_ns: list[int] | tuple[int, ...], 
         raise ValueError("stale_budget_s must be positive")
 
     med = _median_fraction(vals)
-    dispersion = sum((abs(Fraction(v, 1) - med) for v in vals), Fraction(0, 1)) / len(vals)
+    dispersion = sum(
+        (abs(Fraction(v, 1) - med) for v in vals),
+        Fraction(0, 1),
+    ) / len(vals)
     budget = Fraction(str(stale_budget_s)) * 1_000_000_000
     if budget <= 0:
         raise ValueError("stale budget must be positive")
@@ -157,13 +164,11 @@ def benchmark_candidate_tau(
         raise ValueError("batch_hashes smaller than backend lane width")
 
     backend.bench(
-        __import__("bitmyner.core", fromlist=["GENESIS_HEADER76"]).GENESIS_HEADER76,
+        GENESIS_HEADER76,
         0,
         max(backend.lanes * 4096, min(count, backend.lanes * 20000)),
         candidate.threads,
     )
-
-    from .core import GENESIS_HEADER76
 
     latencies_ns: list[int] = []
     samples_hps: list[float] = []
@@ -177,13 +182,17 @@ def benchmark_candidate_tau(
 
     med_hps = statistics.median(samples_hps)
     mean_hps = statistics.fmean(samples_hps)
-    cv = statistics.pstdev(samples_hps) / mean_hps if len(samples_hps) > 1 and mean_hps else 0.0
+    cv = (
+        statistics.pstdev(samples_hps) / mean_hps
+        if len(samples_hps) > 1 and mean_hps
+        else 0.0
+    )
     tau = tau_modulation_from_latencies_ns(latencies_ns, stale_budget_s)
     median_latency_s = float(tau.median_latency_ns) / 1_000_000_000.0
     tau_latency_ratio = median_latency_s / stale_budget_s
 
-    # Jitter no longer has an arbitrary hard CV cut. It is represented by the
-    # exact scalar-tau transform. The stale-work latency budget remains a hard
+    # Jitter has no arbitrary CV promotion threshold. It is represented by the
+    # exact tau transform. The stale-work latency budget remains a hard
     # operational admission boundary.
     eligible = tau.tau_latency == 1
     tau_modulated_hps = med_hps * float(tau.tau_scalar)
@@ -239,9 +248,20 @@ def autotune_tau(
             continue
 
         if name in {"avx512x2", "avx512"}:
-            batch_grid = sorted({max(backend.lanes * 4096, batch_hashes // 2), batch_hashes, batch_hashes * 2})
+            batch_grid = sorted(
+                {
+                    max(backend.lanes * 4096, batch_hashes // 2),
+                    batch_hashes,
+                    batch_hashes * 2,
+                }
+            )
         elif name == "avx2":
-            batch_grid = sorted({max(backend.lanes * 4096, batch_hashes // 2), batch_hashes})
+            batch_grid = sorted(
+                {
+                    max(backend.lanes * 4096, batch_hashes // 2),
+                    batch_hashes,
+                }
+            )
         else:
             batch_grid = [max(backend.lanes * 4096, batch_hashes // 2)]
 
@@ -260,16 +280,25 @@ def autotune_tau(
     if not records:
         raise RuntimeError(f"NO_BACKEND_SURVIVED:{backend_errors}")
 
-    eligible = [r for r in records if r.promotion_eligible]
-    pool = eligible if eligible else records
-    winner = max(pool, key=lambda r: (r.score, r.median_hps, r.tau_scalar_num / r.tau_scalar_den))
+    eligible_records = [r for r in records if r.promotion_eligible]
+    pool = eligible_records if eligible_records else records
+    winner = max(
+        pool,
+        key=lambda r: (
+            r.score,
+            r.median_hps,
+            Fraction(r.tau_scalar_num, r.tau_scalar_den),
+        ),
+    )
 
     payload: dict[str, object] = {
         "schema": "BITMYNER_EXTREME_AUTOTUNE_V0_3_TAU_JITTER",
         "created_unix_ns": time.time_ns(),
         "noema": asdict(noema),
         "cpu_count": cpu_count,
-        "cpu_flags_used": sorted(flags.intersection({"avx2", "avx512f", "sha_ni", "sha"})),
+        "cpu_flags_used": sorted(
+            flags.intersection({"avx2", "avx512f", "sha_ni", "sha"})
+        ),
         "tau_stale_budget_s": stale_budget_s,
         "tau_jitter_definition": {
             "status": "BITMYNER_PROJECT_EXACT_DEFINITION",
@@ -290,7 +319,10 @@ def autotune_tau(
             "jitter_authority": "EXACT_SCALAR_TAU_MODULATION",
             "roles": ["SPIDER", "ANT", "MANTIS", "HOUND", "OWL", "BELZEBUB"],
         },
-        "q28_semantics": "CLASSICAL_EXACT_28_BIT_CONFIGURATION_ADDRESS_ONLY_NO_PHYSICAL_QPU_CLAIM",
+        "q28_semantics": (
+            "CLASSICAL_EXACT_28_BIT_CONFIGURATION_ADDRESS_ONLY_"
+            "NO_PHYSICAL_QPU_CLAIM"
+        ),
         "selftests": selftests,
         "backend_errors": backend_errors,
         "records": [asdict(r) for r in records],
