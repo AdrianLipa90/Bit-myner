@@ -6,7 +6,7 @@ from pathlib import Path
 import time
 
 from .core import build_backend, compact_to_target, read_noema, phasenav_shard
-from .tau_jitter import autotune_tau
+from .tau_exact import autotune_tau_exact
 
 
 def main() -> int:
@@ -43,7 +43,7 @@ def main() -> int:
         return 0
     if ns.cmd == "autotune":
         noema = read_noema(root, require_execution=False)
-        result = autotune_tau(
+        result = autotune_tau_exact(
             noema,
             repeats=ns.repeats,
             batch_hashes=ns.batch_hashes,
@@ -53,7 +53,7 @@ def main() -> int:
         if ns.output:
             Path(ns.output).write_text(text + "\n")
         print(text)
-        return 0
+        return 0 if result.get("status") == "PASS" else 3
     if ns.cmd == "shard":
         noema = read_noema(root, require_execution=False)
         print(json.dumps(phasenav_shard(ns.worker_id, ns.workers, noema.phase36).__dict__, indent=2))
