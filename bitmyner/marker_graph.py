@@ -112,6 +112,7 @@ def append_trace_evidence(
     nonce: int,
     digest: bytes,
     leading_zero_bits: int,
+    first_digest: bytes | None = None,
     round_records: Iterable[Any],
     event_k: int | None = None,
 ) -> dict[str, str]:
@@ -122,7 +123,21 @@ def append_trace_evidence(
     previous = nonce_node
     first_state = None
     last_state = None
+    previous_stage = None
+    first_hash_node = ''
     for r in round_records:
+        if previous_stage == 1 and int(r.stage) == 2:
+            if first_digest is None:
+                raise ValueError('first_digest is required for an exact SHA256d stage transition')
+            first_hash_node = graph.add_node('HASH', {
+                'digest_hex': first_digest.hex(),
+                'stage': 'SHA256_FIRST',
+            })
+            graph.add_edge('COMPUTATIONAL_EDGE', previous, first_hash_node, {
+                'operator': 'sha256_compress_finalize_and_serialize'
+            })
+            previous = first_hash_node
+
         state_payload = {
             'stage': int(r.stage), 'round': int(r.round),
             'a': int(r.a), 'b': int(r.b), 'c': int(r.c), 'd': int(r.d),
@@ -130,14 +145,21 @@ def append_trace_evidence(
             't1': int(r.t1), 't2': int(r.t2), 'w': int(r.w),
         }
         state_node = graph.add_node('ROUND_STATE', state_payload)
-        graph.add_edge('COMPUTATIONAL_EDGE', previous, state_node, {'operator': 'sha256_round'})
+        if int(r.stage) == 1 and int(r.round) == 0:
+            operator = 'sha256_first_hash_round0_from_header_midstate'
+        elif int(r.stage) == 2 and int(r.round) == 0:
+            operator = 'sha256_second_hash_round0_from_first_digest'
+        else:
+            operator = 'sha256_round'
+        graph.add_edge('COMPUTATIONAL_EDGE', previous, state_node, {'operator': operator})
         previous = state_node
+        previous_stage = int(r.stage)
         if first_state is None:
             first_state = state_node
         last_state = state_node
 
-    hash_node = graph.add_node('HASH', {'digest_hex': digest.hex(), 'leading_zero_bits': leading_zero_bits})
-    graph.add_edge('COMPUTATIONAL_EDGE', previous, hash_node, {'operator': 'sha256d_finalize'})
+    hash_node = graph.add_node('HASH', {'digest_hex': digest.hex(), 'leading_zero_bits': leading_zero_bits, 'stage': 'SHA256D_FINAL'})
+    graph.add_edge('COMPUTATIONAL_EDGE', previous, hash_node, {'operator': 'sha256_compress_finalize_and_serialize'})
     event_node = ''
     if event_k is not None:
         event_node = graph.add_node('THRESHOLD_EVENT', {
@@ -153,6 +175,7 @@ def append_trace_evidence(
         'nonce': nonce_node,
         'first_state': first_state or '',
         'last_state': last_state or '',
+        'first_hash': first_hash_node,
         'hash': hash_node,
         'event': event_node,
     }
