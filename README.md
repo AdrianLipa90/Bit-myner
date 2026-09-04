@@ -1,4 +1,4 @@
-# Bit-myner v0.6
+# Bit-myner v0.7
 
 High-throughput Bitcoin SHA256d mining kernel with NOEMA fail-closed admission, DNCrypt/PhaseNav 36D scheduler state, GREMLIN two-stage autotuning, exact scalar-tau jitter modulation, non-overlapping nonce sharding, and an experimental marker-graph research layer.
 
@@ -94,7 +94,7 @@ The v0.1 evidence graph also represents the first-SHA -> second-SHA transition e
 
 The v0.1 implementation does not instrument every AVX512x2 hash. It replays selected events out of band, preserving the mining hot path. No cryptographic advantage is assumed and no marker modifies production policy until independent validation and holdout lower-confidence-bound gates pass.
 
-Run the bounded research benchmark with:
+Run the bounded v0.1 benchmark with:
 
 ```text
 python -m bitmyner marker-benchmark \
@@ -102,10 +102,53 @@ python -m bitmyner marker-benchmark \
   --nonces-per-header 512 \
   --event-k 8 \
   --top-k 8 \
-  --output evidence/marker_graph.json
+  --output evidence/marker_graph_v01.json
 ```
 
-Formal graph semantics are documented in `docs/MARKER_GRAPH_V0_1.md`; the machine-readable schema is `schemas/MARKER_GRAPH_V0_1.schema.json`.
+## Marker Graph v0.2
+
+v0.2 adds four things to the falsification loop:
+
+1. a bounded multilevel MOLE event ring that stores only `(header, nonce, digest)` tuples in the capture path;
+2. deterministic composite two-predicate DNCrypt genomes generated only from training-selected RAVEN seeds;
+3. a threshold ladder `K={k_1,...,k_m}` instead of a single surrogate target;
+4. an exact SHA-round cost model for deciding whether a marker can increase retained low-hash events per unit of computation.
+
+For a genome `g`, threshold `k`, and exact marker-policy round cost `c_i(g)`:
+
+```text
+C0 = 128 SHA rounds
+Gamma_k(g)
+  = (N_marker,event / sum_i c_i(g))
+    / (N_event / (128 N))
+```
+
+so `Gamma > 1` means more retained threshold events per SHA-round unit than full SHA256d evaluation on that dataset. The metric includes event loss as well as early-rejection savings.
+
+HOUND evaluates validation and frozen holdout separately at each level. The familywise alpha is Bonferroni-corrected across selected candidates × threshold levels × validation/holdout. BELZEBUB requires conservative cost-adjusted gain above `1 + delta` on both validation and holdout for multiple consecutive threshold levels before a research candidate can pass the v0.2 gate.
+
+Runtime tau coupling is formally
+
+```text
+Gamma_tau = Gamma * s_tau,marker / s_tau,baseline
+```
+
+but the offline v0.2 experiment has no measured marker-policy latency receipt, so the ratio remains exactly 1 until a real runtime measurement exists. No runtime tau gain is invented from round counts.
+
+Run the bounded v0.2 benchmark with:
+
+```text
+python -m bitmyner marker-benchmark-v2 \
+  --headers 21 \
+  --nonces-per-header 512 \
+  --thresholds 6,8,10,12 \
+  --seed-top-k 16 \
+  --pair-limit 64 \
+  --top-k 8 \
+  --output evidence/marker_graph_v02.json
+```
+
+Formal v0.1 semantics are documented in `docs/MARKER_GRAPH_V0_1.md`; v0.2 multilevel/cost semantics are in `docs/MARKER_GRAPH_V0_2.md`. The machine-readable v0.1 graph schema remains `schemas/MARKER_GRAPH_V0_1.schema.json` because v0.2 extends experiment/promotion semantics without changing the stored graph node/edge contract.
 
 ## Correctness boundary
 
