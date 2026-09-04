@@ -46,7 +46,7 @@ uint64_t bm_avx512x2_scan_bench(const uint8_t *header76,uint32_t start,uint64_t 
 for(uint64_t j=0;j<chunks;j++){V a[8],b[8];hash32(mid,t0,t1,t2,start+(uint32_t)(j*32),a,b);chk^=fold16(a[0])^fold16(a[7])^fold16(b[0])^fold16(b[7]);}return chk^count;}
 int bm_avx512x2_scan_target(const uint8_t *header76,uint32_t start,uint64_t count,const uint8_t *target_le,int threads,uint32_t *found_nonce,uint8_t *found_hash){uint32_t mid[8];bm_header_midstate(header76,mid);uint32_t t0=bm_be32(header76+64),t1=bm_be32(header76+68),t2=bm_be32(header76+72);uint64_t chunks=count/32,best=UINT64_MAX;
 #pragma omp parallel for schedule(static) num_threads(threads>0?threads:1)
-for(uint64_t j=0;j<chunks;j++){if(j*32>=best)continue;V a[8],b[8];hash32(mid,t0,t1,t2,start+(uint32_t)(j*32),a,b);uint32_t wa[8][16],wb[8][16];for(int k=0;k<8;k++){_mm512_storeu_si512((void*)wa[k],a[k]);_mm512_storeu_si512((void*)wb[k],b[k]);}for(int l=0;l<32;l++){uint8_t h[32];uint32_t (*w)[16]=(l<16)?wa:wb;int q=(l<16)?l:l-16;for(int k=0;k<8;k++)bm_putbe32(h+4*k,w[k][q]);if(bm_hash_le_target(h,target_le)){uint64_t off=j*32+(uint64_t)l;
+for(uint64_t j=0;j<chunks;j++){V a[8],b[8];hash32(mid,t0,t1,t2,start+(uint32_t)(j*32),a,b);uint32_t wa[8][16],wb[8][16];for(int k=0;k<8;k++){_mm512_storeu_si512((void*)wa[k],a[k]);_mm512_storeu_si512((void*)wb[k],b[k]);}for(int l=0;l<32;l++){uint8_t h[32];uint32_t (*w)[16]=(l<16)?wa:wb;int q=(l<16)?l:l-16;for(int k=0;k<8;k++)bm_putbe32(h+4*k,w[k][q]);if(bm_hash_le_target(h,target_le)){uint64_t off=j*32+(uint64_t)l;
 #pragma omp critical(bitmyner_best_avx512x2)
 {if(off<best)best=off;}}}}
 if(best==UINT64_MAX)return 0;*found_nonce=start+(uint32_t)best;bm_sha256d_one(header76,*found_nonce,found_hash);return 1;}
