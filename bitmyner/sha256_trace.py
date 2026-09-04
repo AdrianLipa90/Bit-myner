@@ -76,6 +76,7 @@ class RoundRecord:
 class Sha256dTrace:
     header76: bytes
     nonce: int
+    first_digest: bytes
     digest: bytes
     stage1: tuple[RoundRecord, ...]
     stage2: tuple[RoundRecord, ...]
@@ -94,7 +95,7 @@ class Sha256dTrace:
     @property
     def leading_zero_bits(self) -> int:
         n = 0
-        for byte in self.digest:
+        for byte in self.digest[::-1]:
             if byte == 0:
                 n += 8
                 continue
@@ -125,7 +126,7 @@ def sha256d_trace(header76: bytes, nonce: int) -> Sha256dTrace:
     block2[62:64] = (32 * 8).to_bytes(2, 'big')
     second_state, stage2 = _compress(IV, bytes(block2), stage=2)
     digest = b''.join(x.to_bytes(4, 'big') for x in second_state)
-    return Sha256dTrace(header76, nonce, digest, stage1, stage2)
+    return Sha256dTrace(header76, nonce, first_digest, digest, stage1, stage2)
 
 
 def sha256d_reference(header76: bytes, nonce: int) -> bytes:
@@ -138,4 +139,4 @@ def surrogate_event(digest: bytes, k: int) -> bool:
         raise ValueError('k must be in [0, 256]')
     if len(digest) != 32:
         raise ValueError('digest must be 32 bytes')
-    return int.from_bytes(digest, 'big') < (1 << (256-k)) if k else True
+    return int.from_bytes(digest, 'little') < (1 << (256-k)) if k else True
