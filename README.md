@@ -1,6 +1,6 @@
-# Bit-myner v0.5
+# Bit-myner v0.6
 
-High-throughput Bitcoin SHA256d mining kernel with NOEMA fail-closed admission, DNCrypt/PhaseNav 36D scheduler state, GREMLIN two-stage autotuning, exact scalar-tau jitter modulation, and non-overlapping nonce sharding.
+High-throughput Bitcoin SHA256d mining kernel with NOEMA fail-closed admission, DNCrypt/PhaseNav 36D scheduler state, GREMLIN two-stage autotuning, exact scalar-tau jitter modulation, non-overlapping nonce sharding, and an experimental marker-graph research layer.
 
 ## Hot path
 
@@ -15,7 +15,7 @@ The native CPU path contains:
 - Bitcoin first-64-byte midstate reuse;
 - exact full-256-bit target comparison.
 
-The scheduler never claims that nonce ordering changes SHA256d success probability. Optimization authority is limited to measured throughput, latency, jitter, duplicate-work avoidance, and scale-out.
+The scheduler never assumes that nonce ordering changes SHA256d success probability. Optimization authority is limited to measured throughput, latency, jitter, duplicate-work avoidance, scale-out, and experimentally validated marker policies.
 
 ## Formalism bindings
 
@@ -56,7 +56,7 @@ sha256d_semantics_modified = false
 
 ## GREMLIN two-stage autotuner
 
-`bitmyner/tau_exact.py` now performs:
+`bitmyner/tau_exact.py` performs:
 
 ```text
 BROAD COARSE LATTICE
@@ -69,11 +69,45 @@ TOP-K REFINEMENT
 exact tau promotion
 ```
 
-For AVX-512 backends the default batch lattice spans `1/8, 1/4, 1/2, 1, 2` of the requested center batch. This matters because a smaller batch can win after tau modulation even when a larger batch has a higher transient raw peak.
+For AVX-512 backends the default batch lattice spans `1/8, 1/4, 1/2, 1, 2` of the requested center batch. A smaller batch can therefore win after tau modulation even when a larger batch has a higher transient raw peak.
+
+## Marker Graph v0.1
+
+The research loop is:
+
+```text
+MOLE -> MANTIS -> RAVEN -> DNCrypt -> HOUND -> OWL -> BELZEBUB
+```
+
+MOLE captures selected low-hash events and controls. MANTIS deterministically replays those exact `(header, nonce)` pairs with a full nonce-dependent SHA256d round trace. RAVEN searches candidate motifs. DNCrypt stores marker candidates as content-addressed genomes. HOUND performs header-level validation/holdout falsification. OWL reports lift/support/confidence. BELZEBUB is the only marker-promotion gate.
+
+For surrogate threshold `k`:
+
+```text
+Y_k = 1[H < 2^(256-k)]
+L_k(g) = P(Y_k=1 | M_g=1) / P(Y_k=1)
+```
+
+Train/validation/holdout splitting is performed by header identity, not nonce. A training correlation is never stored as a computational SHA dependency: `COMPUTATIONAL_EDGE` and `ASSOCIATION_EDGE` are separate graph types.
+
+The v0.1 implementation does not instrument every AVX512x2 hash. It replays selected events out of band, preserving the mining hot path. No cryptographic advantage is assumed and no marker modifies production policy until independent validation and holdout lower-confidence-bound gates pass.
+
+Run the bounded research benchmark with:
+
+```text
+python -m bitmyner marker-benchmark \
+  --headers 15 \
+  --nonces-per-header 512 \
+  --event-k 8 \
+  --top-k 8 \
+  --output evidence/marker_graph.json
+```
+
+Formal graph semantics are documented in `docs/MARKER_GRAPH_V0_1.md`; the machine-readable schema is `schemas/MARKER_GRAPH_V0_1.schema.json`.
 
 ## Correctness boundary
 
-Every admitted backend must recover the Bitcoin genesis nonce `2083236893` and hash:
+Every admitted native backend must recover the Bitcoin genesis nonce `2083236893` and hash:
 
 ```text
 000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f
@@ -81,9 +115,11 @@ Every admitted backend must recover the Bitcoin genesis nonce `2083236893` and h
 
 The rolling AVX-512 ×2 kernel was additionally checked against scalar Python SHA256d on 100 independent nonce cases with 4 native threads: `100/100 PASS` on the validation host. Target-hit aggregation was made race-free by restricting shared best-offset mutation to an OpenMP critical section.
 
+Marker Graph adds a separate reference tracer. It is tested against `hashlib` on the genesis header and 100 deterministic random header/nonce pairs before any marker evaluation is trusted.
+
 ## Fresh v0.5 host evidence
 
-`evidence/TAU_NATIVE_VALIDATION_V0_5.json` is the current validation receipt. Scope is explicitly the current chat-container host, not the user's physical machine, H200 hardware, or a physical QPU.
+`evidence/TAU_NATIVE_VALIDATION_V0_5.json` is the current native validation receipt. Scope is explicitly the current chat-container host, not the user's physical machine, H200 hardware, or a physical QPU.
 
 With a 200 ms stale-work budget and five timing trials per configuration, the fresh bounded rolling-kernel lattice selected:
 
@@ -103,7 +139,7 @@ The full measured 2–5 thread × 0.8–6.4M batch lattice and nanosecond timing
 dde33d486918d65074cfee8c4a4d321d8fc888f14ec7242abdf8cc6806b39651
 ```
 
-Host scheduling varied materially between runs, which is exactly why promotion uses tau-modulated repeated timings rather than a peak-hashrate winner.
+Host scheduling varied materially between runs, which is why promotion uses tau-modulated repeated timings rather than a peak-hashrate winner.
 
 ## Build and autotune
 
@@ -115,7 +151,7 @@ python -m bitmyner status
 python -m bitmyner autotune --output evidence/autotune.json
 ```
 
-The native libraries are built locally into `.bitmyner-build/`. CI performs Python compile checks and the native/tau test suite.
+The native libraries are built locally into `.bitmyner-build/`. CI performs Python compile checks and the native/tau/marker-graph test suite.
 
 ## Mining a supplied block-header prefix
 
