@@ -1,4 +1,4 @@
-# Bit-myner v0.7
+# Bit-myner v0.10
 
 High-throughput Bitcoin SHA256d mining kernel with NOEMA fail-closed admission, DNCrypt/PhaseNav 36D scheduler state, GREMLIN two-stage autotuning, exact scalar-tau jitter modulation, non-overlapping nonce sharding, and an experimental marker-graph research layer.
 
@@ -149,6 +149,65 @@ python -m bitmyner marker-benchmark-v2 \
 ```
 
 Formal v0.1 semantics are documented in `docs/MARKER_GRAPH_V0_1.md`; v0.2 multilevel/cost semantics are in `docs/MARKER_GRAPH_V0_2.md`. The machine-readable v0.1 graph schema remains `schemas/MARKER_GRAPH_V0_1.schema.json` because v0.2 extends experiment/promotion semantics without changing the stored graph node/edge contract.
+
+
+## Structural Marker Training v0.4–v0.6
+
+v0.4 expands RAVEN from isolated bits to structural SHA relations and adds an **unlabelled nonce-variation gate**. A predicate must vary within fixed headers before it can enter labelled low-hash training. This rejects header selectors and exact SHA invariants before any surrogate-target label is observed.
+
+v0.5 summarizes recurrent component families across independent training seeds. Recurrence changes research priority only and is not treated as cryptographic evidence.
+
+v0.6 uses an island policy: one island receives a soft proposal prior toward recurrent training-only families, while two escape islands retain the complete structural search space. The prior affects proposal probability, not fitness, and no island uses a hard family whitelist. Completed island receipts can be aggregated without rerunning successful islands.
+
+```text
+python -m bitmyner marker-train-v4 --iterations 1000 --output evidence/train-v04.json
+python -m bitmyner marker-islands-v6 --meta evidence/MARKER_META_V0_5_3X1000.json --iterations 1000 --output evidence/islands-v06.json
+```
+
+No v0.4–v0.6 training result modifies production mining policy. External preregistered evidence remains mandatory for marker promotion.
+
+
+## Marker training v0.4–v0.8
+
+The marker research layer now includes structural predicates, a label-free nonce-variation filter, multi-seed meta analysis, escape-island training, and train-only adaptive prior calibration. The current multi-pilot v0.8 calibration tested prior strengths `0,0.25,0.5,1,2` across independent pilot fixtures and selected `0.0`; the recurrent-family prior was therefore disabled rather than forced into full training.
+
+The completed v0.8 run used three full 1000-iteration islands. Mean duplicate proposal fraction was `0.37545664604817286`, mean final robust core was `0.702978611095001`, exact cross-island genome consensus was empty, and no marker was promoted. Receipt: `daf2da8268edd1a00575fd215755fd69d07cfde99ab000912a6e46ef7d01b033`.
+
+The preceding frozen external evaluation used 51,200 fresh samples with zero header overlap. Point estimates were slightly above one (`Gamma_4=1.004505`, `Gamma_6=1.009679`, `Gamma_8=1.037445`), but all lower confidence bounds remained below one, so the external gate failed as designed.
+
+Commands:
+
+```text
+python -m bitmyner marker-train-v4 --iterations 1000 --output evidence/marker-v04.json
+python -m bitmyner marker-train-v7 --meta evidence/MARKER_META_V0_5_3X1000_CORRECTED.json --iterations 1000 --output evidence/marker-v07.json
+```
+
+The detailed training record is in `docs/MARKER_TRAINING_V0_4_TO_V0_8.md`; the compact machine-readable evolution receipt is `evidence/MARKER_TRAINING_EVOLUTION_V0_3_TO_V0_8.json`. No cryptographic advantage is asserted and production marker policy remains unchanged.
+
+
+## Marker bridge v0.9 and nested cross-fit v0.10
+
+v0.9 stops treating cross-seed family recurrence as evidence by itself. Recurrent structural families only define a search space on a completely new bridge fixture. RAVEN ranks single predicates and cross-family pairs on bridge-train only; validation and holdout remain unavailable to ranking. A bridge pass can only authorize a later preregistered external evaluation. It cannot modify mining policy.
+
+The first bounded v0.9 bridge used 7,680 fresh samples, five recurrent families, 46 nonce-varying predicates, 15 selected single predicates and 32 pair candidates. Zero candidates passed the bridge gate. Receipt: `c28c6280b5b5ff5e53301d7d36f8de22a75f20188dbbcf10bc68f57f6a8ef29c`.
+
+v0.10 adds a nested split inside the ordinary TRAIN surface. Evolution sees only TRAIN-discovery headers. Final candidates must first pass a previously unseen TRAIN-confirmation set. Validation and holdout are opened only for candidates that survive that nested confirmation. Multi-seed meta analysis is computed only from confirmation-passed candidates.
+
+The first completed v0.10 3×1000 run used seeds `3030,3131,3232`. Mean duplicate proposal fraction was `0.3742401890275418` and mean final robust core was `0.705439998069812`. All three islands produced `0` TRAIN-confirmation passes, so validation and holdout remained unopened for all final candidates. No external-evaluation candidate was authorized and no production marker was promoted. Compact receipt: `da69032a5ebe24e168535a172f865ce5f1bdb93061bb34a5cefea3600f110510`.
+
+```text
+python -m bitmyner marker-bridge-v9 \
+  --meta evidence/MARKER_MULTI_PILOT_V0_8_META.json \
+  --output evidence/marker-bridge-v09.json
+
+python -m bitmyner marker-train-v10 \
+  --iterations 1000 \
+  --seeds 3030,3131,3232 \
+  --discovery-fraction 0.72 \
+  --output evidence/marker-nested-v010.json
+```
+
+No v0.9/v0.10 candidate is a production optimization unless it later passes the independent external-evidence boundary.
 
 ## Correctness boundary
 

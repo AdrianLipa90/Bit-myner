@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "bitmyner"
-version = "0.7.0"
+version = "0.10.0"
 description = "NOEMA × DNCrypt × GREMLIN CPU SHA256d engine with exact tau jitter and multilevel marker-graph research"
 requires-python = ">=3.11"
 

@@ -1,0 +1,76 @@
+name: Marker Island Training v0.6
+
+on:
+  push:
+    branches:
+      - exp/marker-training-structural-v0.4
+    paths:
+      - bitmyner/structural_marker.py
+      - bitmyner/marker_training_v4.py
+      - bitmyner/marker_meta_v5.py
+      - bitmyner/marker_training_v5.py
+      - bitmyner/marker_training_v6.py
+      - tests/test_structural_marker_v4.py
+      - tests/test_marker_training_v4.py
+      - tests/test_marker_training_v5.py
+      - tests/test_marker_training_v6.py
+      - evidence/MARKER_META_V0_5_3X1000.json
+      - .github/workflows/marker-islands-v06.yml
+  workflow_dispatch:
+
+jobs:
+  train:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      PYTHONHASHSEED: '0'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install package
+        run: python -m pip install -e '.[test]'
+      - name: Structural and island regression gate
+        run: pytest -q tests/test_structural_marker_v4.py tests/test_marker_training_v4.py tests/test_marker_training_v5.py tests/test_marker_training_v6.py
+      - name: Run 3x1000 soft-prior island training
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from bitmyner.marker_training_v6 import run_island_training_v6
+
+          meta = json.loads(Path('evidence/MARKER_META_V0_5_3X1000.json').read_text())
+          result = run_island_training_v6(
+              meta,
+              iterations=1000,
+              seeds=(919, 1020, 1121),
+              header_count=100,
+              nonces_per_header=128,
+              thresholds=(4, 6, 8),
+              minimum_seed_support=2,
+              focused_prior_strength=2.0,
+          )
+          Path('MARKER_ISLAND_TRAINING_3X1000_V0_6_SOFT.json').write_text(json.dumps(result, indent=2) + '\n')
+          print(json.dumps({
+              'status': result['status'],
+              'receipt_blake2b256': result['receipt_blake2b256'],
+              'total_iterations': result['total_iterations'],
+              'mean_duplicate_fraction': result['mean_duplicate_fraction'],
+              'focused_duplicate_fraction': result['focused_duplicate_fraction'],
+              'escape_mean_duplicate_fraction': result['escape_mean_duplicate_fraction'],
+              'promoted': [r['promoted_count'] for r in result['runs']],
+              'consensus_component_families': result['cross_island_meta']['consensus_component_families'],
+              'consensus_exact_genomes': result['cross_island_meta']['consensus_exact_genomes'],
+          }, indent=2))
+          if result['status'] != 'PASS_ISLAND_TRAINING_COMPLETE':
+              raise SystemExit(4)
+          if any(r['promoted_count'] for r in result['runs']):
+              raise SystemExit(5)
+          PY
+      - name: Upload island receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: marker-island-training-v06
+          path: MARKER_ISLAND_TRAINING_3X1000_V0_6_SOFT.json
+          if-no-files-found: error

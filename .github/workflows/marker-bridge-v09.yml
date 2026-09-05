@@ -1,0 +1,43 @@
+name: Marker Bridge v0.9
+
+on:
+  push:
+    branches:
+      - exp/marker-training-v0.10
+    paths:
+      - bitmyner/marker_bridge_v9.py
+      - tests/test_marker_bridge_v9.py
+      - .github/workflows/marker-bridge-v09.yml
+  workflow_dispatch:
+
+jobs:
+  bridge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      PYTHONHASHSEED: '0'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -e '.[test]'
+      - name: Regression gate
+        run: pytest -q tests/test_marker_bridge_v9.py tests/test_marker_training_v4.py
+      - name: Fresh bridge recombination
+        run: |
+          python -m bitmyner marker-bridge-v9 \
+            --meta evidence/MARKER_MULTI_PILOT_V0_8_META.json \
+            --bridge-seed 2626 \
+            --headers 80 \
+            --nonces-per-header 96 \
+            --thresholds 4,6,8 \
+            --top-singles-per-family 3 \
+            --pair-limit 32 \
+            --top-k 6 \
+            --output MARKER_BRIDGE_V0_9.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: marker-bridge-v09
+          path: MARKER_BRIDGE_V0_9.json
+          if-no-files-found: error

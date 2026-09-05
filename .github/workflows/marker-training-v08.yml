@@ -1,0 +1,45 @@
+name: Marker Training v0.8
+
+on:
+  push:
+    branches:
+      - exp/marker-training-structural-v0.4
+    paths:
+      - bitmyner/structural_marker.py
+      - bitmyner/marker_training_v4.py
+      - bitmyner/marker_meta_v5.py
+      - bitmyner/marker_training_v5.py
+      - bitmyner/marker_training_v6.py
+      - bitmyner/marker_training_v7.py
+      - bitmyner/marker_training_v8.py
+      - tests/test_structural_marker_v4.py
+      - tests/test_marker_training_v4.py
+      - tests/test_marker_training_v5.py
+      - tests/test_marker_training_v6.py
+      - tests/test_marker_training_v7.py
+      - tests/test_marker_training_v8.py
+      - .github/workflows/marker-training-v08.yml
+  workflow_dispatch:
+
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      PYTHONHASHSEED: '0'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install package
+        run: python -m pip install -e '.[test]'
+      - name: Marker training regression suite
+        run: >-
+          pytest -q
+          tests/test_structural_marker_v4.py
+          tests/test_marker_training_v4.py
+          tests/test_marker_training_v5.py
+          tests/test_marker_training_v6.py
+          tests/test_marker_training_v7.py
+          tests/test_marker_training_v8.py

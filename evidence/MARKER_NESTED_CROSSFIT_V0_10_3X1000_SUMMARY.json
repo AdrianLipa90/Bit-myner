@@ -1,0 +1,21 @@
+{
+  "schema": "BITMYNER_MARKER_NESTED_CROSSFIT_V0_10_3X1000_SUMMARY",
+  "status": "PASS_NESTED_CROSSFIT_TRAINING_COMPLETE",
+  "iterations_per_island": 1000,
+  "total_iterations": 3000,
+  "seeds": [3030,3131,3232],
+  "train_discovery_fraction": 0.72,
+  "runs": [
+    {"seed":3030,"receipt_blake2b256":"a9301f2d3136d509ebd8e6a5c43224948f2885012eb5969dbee2f6b332799c50","duplicate_proposal_fraction":0.3546734955185659,"final_robust_core":0.6942746170538503,"confirmation_pass_count":0,"validation_holdout_open_count":0,"promoted_count":0},
+    {"seed":3131,"receipt_blake2b256":"623d6e8a8cf9a4c4b0481534ad9a75e9c2ee64bde82424fce839c0463a503589","duplicate_proposal_fraction":0.3784012949973021,"final_robust_core":0.7295629177932877,"confirmation_pass_count":0,"validation_holdout_open_count":0,"promoted_count":0},
+    {"seed":3232,"receipt_blake2b256":"6724eb1619806c0d291c8585081f34949898549b04f736932ec5903479c6bb12","duplicate_proposal_fraction":0.3896457765667575,"final_robust_core":0.6924824593622977,"confirmation_pass_count":0,"validation_holdout_open_count":0,"promoted_count":0}
+  ],
+  "mean_duplicate_fraction": 0.3742401890275418,
+  "mean_final_robust_core": 0.705439998069812,
+  "confirmation_pass_counts": [0,0,0],
+  "validation_holdout_open_counts": [0,0,0],
+  "promoted_counts": [0,0,0],
+  "external_evaluation_authorized_candidates": [],
+  "claims": {"meta_uses_confirmation_passed_candidates_only":true,"validation_holdout_not_opened_for_confirmation_failures":true,"cryptographic_advantage_established":false,"production_policy_modified":false},
+  "receipt_blake2b256":"da69032a5ebe24e168535a172f865ce5f1bdb93061bb34a5cefea3600f110510"
+}
