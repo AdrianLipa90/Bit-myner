@@ -15,6 +15,7 @@ from .marker_training_v7 import run_adaptive_island_training_v7
 from .marker_training_v8 import run_multi_pilot_island_training_v8
 from .marker_bridge_v9 import run_bridge_recombination_v9
 from .marker_training_v10 import run_nested_crossfit_training_v10
+from .marker_training_v11 import run_nested_crossfit_training_v11
 
 
 def _parse_thresholds(text: str) -> tuple[int, ...]:
@@ -134,6 +135,20 @@ def main() -> int:
     mt10.add_argument("--discovery-fraction", type=float, default=0.72)
     mt10.add_argument("--output")
 
+    mt11 = sub.add_parser("marker-train-v11")
+    mt11.add_argument("--iterations", type=int, default=1000)
+    mt11.add_argument("--headers", type=int, default=160)
+    mt11.add_argument("--nonces-per-header", type=int, default=128)
+    mt11.add_argument("--thresholds", type=_parse_thresholds, default=(4, 6, 8))
+    mt11.add_argument("--seeds", type=_parse_int_tuple, default=(4040, 4141, 4242))
+    mt11.add_argument("--population", type=int, default=64)
+    mt11.add_argument("--offspring", type=int, default=8)
+    mt11.add_argument("--max-predicates", type=int, default=3)
+    mt11.add_argument("--discovery-fraction", type=float, default=0.72)
+    mt11.add_argument("--max-cohorts", type=int, default=4)
+    mt11.add_argument("--min-expected-events-per-cohort", type=float, default=8.0)
+    mt11.add_argument("--output")
+
     sh = sub.add_parser("shard")
     sh.add_argument("--worker-id", type=int, required=True)
     sh.add_argument("--workers", type=int, required=True)
@@ -233,6 +248,14 @@ def main() -> int:
             Path(ns.output).write_text(text + "\n")
         print(text)
         return 0 if result.get("status") == "PASS_NESTED_CROSSFIT_TRAINING_COMPLETE" else 11
+    if ns.cmd == "marker-train-v11":
+        read_noema(root, require_execution=False)
+        result = run_nested_crossfit_training_v11(iterations=ns.iterations, seeds=ns.seeds, header_count=ns.headers, nonces_per_header=ns.nonces_per_header, thresholds=ns.thresholds, population_size=ns.population, offspring_per_iteration=ns.offspring, max_predicates=ns.max_predicates, train_discovery_fraction=ns.discovery_fraction, requested_max_cohorts=ns.max_cohorts, min_expected_events_per_cohort=ns.min_expected_events_per_cohort)
+        text = json.dumps(result, indent=2)
+        if ns.output:
+            Path(ns.output).write_text(text + "\n")
+        print(text)
+        return 0 if result.get("status") == "PASS_NESTED_CROSSFIT_V11_COMPLETE" else 12
     if ns.cmd == "shard":
         noema = read_noema(root, require_execution=False)
         print(json.dumps(phasenav_shard(ns.worker_id, ns.workers, noema.phase36).__dict__, indent=2))
