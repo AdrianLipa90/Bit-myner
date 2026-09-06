@@ -1,0 +1,73 @@
+name: Marker Augmented Crossfit v0.13
+
+on:
+  push:
+    branches:
+      - exp/marker-augmented-v0.13
+    paths:
+      - bitmyner/structural_marker.py
+      - bitmyner/marker_training_v13.py
+      - tests/test_structural_marker_v13.py
+      - .github/workflows/marker-augmented-v13.yml
+  workflow_dispatch:
+
+jobs:
+  train:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      PYTHONHASHSEED: '0'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -e '.[test]'
+      - name: Regression gate
+        run: pytest -q tests/test_structural_marker_v13.py tests/test_structural_marker_v4.py tests/test_marker_training_v11.py tests/test_marker_training_v4.py
+      - name: Run 3 x 1000 augmented structural crossfit training
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from bitmyner.marker_training_v13 import run_augmented_crossfit_training_v13
+
+          result = run_augmented_crossfit_training_v13(
+              iterations=1000,
+              seeds=(5050, 5151, 5252),
+              header_count=160,
+              nonces_per_header=128,
+              thresholds=(4, 6, 8),
+              population_size=64,
+              offspring_per_iteration=8,
+              max_predicates=3,
+              train_discovery_fraction=0.72,
+              requested_max_cohorts=4,
+              min_expected_events_per_cohort=8.0,
+          )
+          Path('MARKER_AUGMENTED_CROSSFIT_V0_13_3X1000.json').write_text(
+              json.dumps(result, indent=2) + '\n'
+          )
+          print(json.dumps({
+              'status': result['status'],
+              'receipt_blake2b256': result['receipt_blake2b256'],
+              'feature_space': result['feature_space'],
+              'confirmation_pass_counts': result['confirmation_pass_counts'],
+              'validation_holdout_open_counts': result['validation_holdout_open_counts'],
+              'best_confirmation_gamma_lcb_by_island': result['best_confirmation_gamma_lcb_by_island'],
+              'mean_best_confirmation_gamma_lcb': result['mean_best_confirmation_gamma_lcb'],
+              'mean_duplicate_fraction': result['mean_duplicate_fraction'],
+              'mean_final_robust_core': result['mean_final_robust_core'],
+              'promoted_counts': result['promoted_counts'],
+              'external_candidates': result['external_evaluation_authorized_candidates'],
+          }, indent=2))
+          if result['status'] != 'PASS_AUGMENTED_CROSSFIT_V13_COMPLETE':
+              raise SystemExit(4)
+          if result['claims']['production_policy_modified']:
+              raise SystemExit(5)
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: marker-augmented-v013-3x1000
+          path: MARKER_AUGMENTED_CROSSFIT_V0_13_3X1000.json
+          if-no-files-found: error
