@@ -12,7 +12,7 @@ FULL_COST = 128
 SCHEMA = 'BITMYNER_STRUCTURAL_MARKER_V0_4'
 
 _ALLOWED_SOURCES = {'a','b','c','d','e','f','g','h','t1','t2','w'}
-_ALLOWED_OPS = {'direct','xor'}
+_ALLOWED_OPS = {'direct','xor','xor_prev','carry'}
 
 
 @dataclass(frozen=True, slots=True)
@@ -34,11 +34,20 @@ class StructuralPredicate:
             raise ValueError('unsupported op')
         if self.left not in _ALLOWED_SOURCES:
             raise ValueError('unsupported left source')
-        if self.op == 'xor':
+        if self.op == 'direct':
+            if self.right is not None:
+                raise ValueError('direct predicate may not have right source')
+        elif self.op == 'xor':
             if self.right not in _ALLOWED_SOURCES or self.right == self.left:
                 raise ValueError('xor requires distinct supported right source')
-        elif self.right is not None:
-            raise ValueError('direct predicate may not have right source')
+        elif self.op == 'xor_prev':
+            if self.round == 0:
+                raise ValueError('xor_prev requires round >= 1')
+            if self.right not in _ALLOWED_SOURCES:
+                raise ValueError('xor_prev requires a supported previous-round source')
+        elif self.op == 'carry':
+            if self.right not in _ALLOWED_SOURCES or self.right == self.left:
+                raise ValueError('carry requires distinct supported right source')
         if not 0 <= self.bit < 32:
             raise ValueError('bit must be in [0,31]')
         if self.value not in (0, 1):
@@ -49,7 +58,14 @@ class StructuralPredicate:
         x = r.source(self.left)
         if self.op == 'direct':
             return x
-        return x ^ r.source(self.right or '')
+        if self.op == 'xor':
+            return x ^ r.source(self.right or '')
+        if self.op == 'xor_prev':
+            prev = sample.trace.record(self.stage, self.round - 1)
+            return x ^ prev.source(self.right or '')
+        y = r.source(self.right or '')
+        summed = (x + y) & 0xFFFFFFFF
+        return ((x & y) | ((x | y) & (~summed & 0xFFFFFFFF))) & 0xFFFFFFFF
 
     def matches(self, sample: TraceSample) -> bool:
         return ((self.expression_value(sample) >> self.bit) & 1) == self.value
@@ -92,6 +108,58 @@ def structural_population(
                     for value in (0, 1):
                         out.append(StructuralPredicate(stage, r, 'xor', left, bit, value, right))
     return tuple(out)
+
+
+def augmented_structural_population(
+    *,
+    stages: Iterable[int] = (1, 2),
+    rounds: Iterable[int] = (0, 3, 7, 15, 31, 47, 63),
+    direct_sources: Iterable[str] = ('a','e','t1','w'),
+    xor_pairs: Iterable[tuple[str, str]] = (
+        ('a','e'), ('a','t1'), ('e','t1'), ('t1','w'),
+        ('t1','t2'), ('e','w'), ('a','w'),
+    ),
+    temporal_sources: Iterable[str] = ('a','e','t1','w'),
+    carry_pairs: Iterable[tuple[str, str]] = (('t1','t2'),),
+    bits: Iterable[int] = (0, 7, 15, 23, 31),
+) -> tuple[StructuralPredicate, ...]:
+    """Base v0.4 predicates plus cross-round XOR and addition-carry features.
+
+    v0.13 keeps the original `structural_population()` unchanged for exact
+    reproduction of older receipts. Temporal predicates compare the selected
+    current-round source with a source from the immediately previous round. Carry
+    predicates expose the carry-out mask of a two-word uint32 addition at the same
+    checkpoint.
+    """
+    stages = tuple(int(x) for x in stages)
+    rounds = tuple(int(x) for x in rounds)
+    bits = tuple(int(x) for x in bits)
+    out = list(structural_population(
+        stages=stages,
+        rounds=rounds,
+        direct_sources=direct_sources,
+        xor_pairs=xor_pairs,
+        bits=bits,
+    ))
+    for stage in stages:
+        for r in rounds:
+            if r > 0:
+                for source in temporal_sources:
+                    for bit in bits:
+                        for value in (0, 1):
+                            out.append(StructuralPredicate(stage, r, 'xor_prev', source, bit, value, source))
+            for left, right in carry_pairs:
+                for bit in bits:
+                    for value in (0, 1):
+                        out.append(StructuralPredicate(stage, r, 'carry', left, bit, value, right))
+    seen: set[str] = set()
+    unique: list[StructuralPredicate] = []
+    for predicate in out:
+        if predicate.predicate_id in seen:
+            continue
+        seen.add(predicate.predicate_id)
+        unique.append(predicate)
+    return tuple(unique)
 
 
 def nonce_variation_filter(
