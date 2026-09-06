@@ -111,6 +111,7 @@ def run_training_1000_v4(
     family_prior: dict[str, float] | None = None,
     family_prior_strength: float = 0.0,
     final_evaluate: bool = True,
+    train_discovery_fraction: float = 1.0,
 ) -> dict:
     rng = random.Random(seed)
     headers = deterministic_headers(header_count, seed=seed)
@@ -133,9 +134,31 @@ def run_training_1000_v4(
     train_headers = sorted(corpus.header_masks['train'])
     if len(train_headers) < 8:
         raise RuntimeError('insufficient train headers')
-    train_mask = corpus.universe['train']
+    discovery_fraction = float(train_discovery_fraction)
+    if not 0.0 < discovery_fraction <= 1.0:
+        raise ValueError('train_discovery_fraction must be in (0,1]')
+    confirmation_headers: list[str] = []
+    if discovery_fraction < 1.0:
+        if len(train_headers) < 10:
+            raise RuntimeError('insufficient train headers for nested discovery/confirmation split')
+        keyed = sorted(
+            (hashlib.blake2b(f'{split_seed}|outer-train|{h}'.encode(), digest_size=8).digest(), h)
+            for h in train_headers
+        )
+        ordered_headers = [h for _, h in keyed]
+        discovery_count = max(6, min(len(ordered_headers) - 4, int(round(len(ordered_headers) * discovery_fraction))))
+        discovery_headers = ordered_headers[:discovery_count]
+        confirmation_headers = ordered_headers[discovery_count:]
+    else:
+        discovery_headers = list(train_headers)
+    train_mask = 0
+    for h in discovery_headers:
+        train_mask |= corpus.header_masks['train'][h]
+    confirmation_mask = 0
+    for h in confirmation_headers:
+        confirmation_mask |= corpus.header_masks['train'][h]
     cohort_epoch = 0
-    cohorts = _cohort_masks(corpus, train_headers, count=cohort_count, epoch=cohort_epoch, seed=split_seed)
+    cohorts = _cohort_masks(corpus, discovery_headers, count=cohort_count, epoch=cohort_epoch, seed=split_seed)
     universe = tuple(range(len(predicates)))
     prior_map = {str(k): max(0.0, float(v)) for k,v in (family_prior or {}).items()}
     prior_strength = max(0.0, float(family_prior_strength))
@@ -232,7 +255,7 @@ def run_training_1000_v4(
     for it in range(1, iterations+1):
         if it % cohort_refresh_every == 0:
             cohort_epoch += 1
-            cohorts = _cohort_masks(corpus, train_headers, count=cohort_count, epoch=cohort_epoch, seed=split_seed)
+            cohorts = _cohort_masks(corpus, discovery_headers, count=cohort_count, epoch=cohort_epoch, seed=split_seed)
             refreshes += 1
             rerank()
         ranked = sorted(population.values(), key=key, reverse=True)
@@ -259,18 +282,34 @@ def run_training_1000_v4(
     top = sorted(population.values(), key=key, reverse=True)[:8]
     finals=[]; promoted=[]
     if final_evaluate:
+        confirm_alpha = 0.05 / max(1, len(top)*len(thresholds))
         alpha = 0.05 / max(1, len(top)*len(thresholds)*2)
         for s in top:
+            confirmation_ladder=[]; confirmation_flags=[]
+            if confirmation_mask:
+                for k in thresholds:
+                    cr=corpus.metric(s.genome,'train',int(k),sample_mask=confirmation_mask,alpha=confirm_alpha)
+                    cq=bool(cr['marker_n']>=32 and cr['event_n']>0 and cr['gamma_lcb']>1.0)
+                    confirmation_flags.append(cq)
+                    confirmation_ladder.append({'k':int(k),'confirmation':cr,'qualified':cq})
+                c_longest=c_cur=0
+                for q in confirmation_flags:
+                    c_cur=c_cur+1 if q else 0; c_longest=max(c_longest,c_cur)
+                confirmation_pass=c_longest>=min(2,len(thresholds))
+            else:
+                c_longest=len(thresholds)
+                confirmation_pass=True
             ladder=[]; qs=[]
-            for k in thresholds:
-                vr=corpus.metric(s.genome,'validation',int(k),alpha=alpha)
-                hr=corpus.metric(s.genome,'holdout',int(k),alpha=alpha)
-                q=bool(vr['marker_n']>=32 and hr['marker_n']>=32 and vr['event_n']>0 and hr['event_n']>0 and vr['gamma_lcb']>1.0 and hr['gamma_lcb']>1.0)
-                qs.append(q); ladder.append({'k':int(k),'validation':vr,'holdout':hr,'qualified':q})
+            if confirmation_pass:
+                for k in thresholds:
+                    vr=corpus.metric(s.genome,'validation',int(k),alpha=alpha)
+                    hr=corpus.metric(s.genome,'holdout',int(k),alpha=alpha)
+                    q=bool(vr['marker_n']>=32 and hr['marker_n']>=32 and vr['event_n']>0 and hr['event_n']>0 and vr['gamma_lcb']>1.0 and hr['gamma_lcb']>1.0)
+                    qs.append(q); ladder.append({'k':int(k),'validation':vr,'holdout':hr,'qualified':q})
             longest=cur=0
             for q in qs:
                 cur=cur+1 if q else 0; longest=max(longest,cur)
-            row={'genome':list(s.genome),'family_signature':list(_family_signature(s.genome,predicates)),'train_score':s.score,'robust_core':s.robust_core,'ladder':ladder,'longest_qualified_run':longest,'promote':longest>=min(2,len(thresholds))}
+            row={'genome':list(s.genome),'family_signature':list(_family_signature(s.genome,predicates)),'train_score':s.score,'robust_core':s.robust_core,'confirmation_ladder':confirmation_ladder,'confirmation_longest_qualified_run':c_longest,'confirmation_pass':confirmation_pass,'ladder':ladder,'longest_qualified_run':longest,'promote':bool(confirmation_pass and longest>=min(2,len(thresholds)))}
             finals.append(row)
             if row['promote']: promoted.append(row)
     else:
@@ -290,11 +329,11 @@ def run_training_1000_v4(
         'schema':SCHEMA,'status':'PASS_TRAINING_COMPLETE','iterations':iterations,
         'fixture':{'header_count':header_count,'nonces_per_header':nonces_per_header,'sample_count':len(samples),'split_counts':{k:len(v) for k,v in corpus.samples_by_split.items()},'thresholds':list(thresholds),'seed':seed,'split_seed':split_seed},
         'causal_filter':filter_receipt,
-        'training_policy':{'selection_surface':'TRAIN_ONLY','validation_role':'FROZEN_UNTIL_TRAINING_COMPLETE','holdout_role':'FROZEN_UNTIL_TRAINING_COMPLETE','rolling_header_cohorts':True,'structural_predicates':True,'unlabelled_nonce_variation_filter':True,'requested_population_size':requested_population_size,'effective_population_size':population_size,'family_prior':prior_map,'family_prior_strength':prior_strength,'family_prior_probability':prior_probability},
+        'training_policy':{'selection_surface':'TRAIN_DISCOVERY_ONLY' if confirmation_headers else 'TRAIN_ONLY','validation_role':'FROZEN_UNTIL_CONFIRMATION_PASS' if confirmation_headers else 'FROZEN_UNTIL_TRAINING_COMPLETE','holdout_role':'FROZEN_UNTIL_CONFIRMATION_PASS' if confirmation_headers else 'FROZEN_UNTIL_TRAINING_COMPLETE','rolling_header_cohorts':True,'structural_predicates':True,'unlabelled_nonce_variation_filter':True,'requested_population_size':requested_population_size,'effective_population_size':population_size,'family_prior':prior_map,'family_prior_strength':prior_strength,'family_prior_probability':prior_probability,'train_discovery_fraction':discovery_fraction,'train_discovery_headers':len(discovery_headers),'train_confirmation_headers':len(confirmation_headers)},
         'search':{'unique_genomes_evaluated':evaluated,'duplicate_proposals':duplicates,'duplicate_proposal_fraction':duplicates/max(1,duplicates+evaluated),'cohort_refreshes':refreshes,'negative_memory':neg.snapshot()},
         'checkpoints':checkpoints,'final_top8':finals,'promoted_count':len(promoted),
         'predicate_catalog':[{'stage':p.stage,'round':p.round,'op':p.op,'left':p.left,'right':p.right,'bit':p.bit,'value':p.value,'family':p.family,'predicate_id':p.predicate_id} for p in predicates],
-        'claims':{'cryptographic_advantage_assumed':False,'validation_used_during_training':False,'holdout_used_during_training':False,'post_training_evaluation_performed':bool(final_evaluate),'production_policy_modified':False},
+        'claims':{'cryptographic_advantage_assumed':False,'validation_used_during_training':False,'holdout_used_during_training':False,'post_training_evaluation_performed':bool(final_evaluate),'nested_train_confirmation_enabled':bool(confirmation_headers),'validation_opened_only_after_confirmation_pass':bool(confirmation_headers),'production_policy_modified':False},
     }
     payload['receipt_blake2b256']=hashlib.blake2b(json.dumps(payload,sort_keys=True,separators=(',',':')).encode(),digest_size=32).hexdigest()
     return payload

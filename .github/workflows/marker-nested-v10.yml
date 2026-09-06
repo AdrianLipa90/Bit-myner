@@ -1,0 +1,45 @@
+name: Marker Nested Crossfit v0.10
+
+on:
+  push:
+    branches:
+      - exp/marker-training-v0.10
+    paths:
+      - bitmyner/marker_training_v10.py
+      - bitmyner/marker_training_v4.py
+      - tests/test_marker_training_v10.py
+      - .github/workflows/marker-nested-v10.yml
+  workflow_dispatch:
+
+jobs:
+  train:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      PYTHONHASHSEED: '0'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -e '.[test]'
+      - name: Nested cross-fit regression gate
+        run: pytest -q tests/test_marker_training_v10.py tests/test_marker_training_v4.py tests/test_structural_marker_v4.py
+      - name: Run 3 x 1000 nested cross-fit training
+        run: |
+          python -m bitmyner marker-train-v10 \
+            --iterations 1000 \
+            --headers 100 \
+            --nonces-per-header 128 \
+            --thresholds 4,6,8 \
+            --seeds 3030,3131,3232 \
+            --population 64 \
+            --offspring 8 \
+            --max-predicates 3 \
+            --discovery-fraction 0.72 \
+            --output MARKER_NESTED_CROSSFIT_V0_10_3X1000.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: marker-nested-v010-3x1000
+          path: MARKER_NESTED_CROSSFIT_V0_10_3X1000.json
+          if-no-files-found: error

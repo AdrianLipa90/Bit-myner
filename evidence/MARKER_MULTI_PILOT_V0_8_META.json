@@ -1,0 +1,23 @@
+{
+  "schema": "BITMYNER_MARKER_META_V0_5_MULTI_SEED",
+  "status": "PASS_META_COMPLETE",
+  "run_count": 3,
+  "minimum_seed_support": 2,
+  "runs": [
+    {"run_index": 0, "seed": 2222, "top8_count": 8, "promoted_count": 0},
+    {"run_index": 1, "seed": 2323, "top8_count": 8, "promoted_count": 0},
+    {"run_index": 2, "seed": 2424, "top8_count": 8, "promoted_count": 0}
+  ],
+  "consensus_families": [],
+  "consensus_component_families": [
+    {"family": "s2:r0:xor:e_t1", "seed_support": 2, "run_indices": [1,2]},
+    {"family": "s2:r0:xor:a_w", "seed_support": 2, "run_indices": [0,1]},
+    {"family": "s1:r7:xor:t1_t2", "seed_support": 2, "run_indices": [0,1]},
+    {"family": "s1:r7:xor:a_t1", "seed_support": 2, "run_indices": [0,2]},
+    {"family": "s1:r7:direct:e", "seed_support": 2, "run_indices": [1,2]}
+  ],
+  "consensus_exact_genomes": [],
+  "external_evaluation_authorized_candidates": [],
+  "claims": {"consensus_is_not_cryptographic_proof": true, "no_candidate_promoted_by_meta_alone": true},
+  "receipt_blake2b256": "a14137ed9a1d30f2c72120ed198f4c94c8da9f2276a6a6ea07e21699a195054d"
+}

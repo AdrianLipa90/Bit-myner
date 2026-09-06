@@ -1,0 +1,9 @@
+{
+  "schema":"BITMYNER_MARKER_TRAINING_EVOLUTION_V0_3_TO_V0_10",
+  "status":"PASS_SUMMARY_COMPLETE",
+  "v0_3_to_v0_8_receipt":"e6d64f47a0a1256af9217f92ab1cf3d4a34f0a6c63633d387f28e78c07c6fb3e",
+  "bridge_v0_9":{"receipt_blake2b256":"c28c6280b5b5ff5e53301d7d36f8de22a75f20188dbbcf10bc68f57f6a8ef29c","sample_count":7680,"authorized_candidates":0},
+  "nested_v0_10":{"receipt_blake2b256":"da69032a5ebe24e168535a172f865ce5f1bdb93061bb34a5cefea3600f110510","total_iterations":3000,"mean_duplicate_fraction":0.3742401890275418,"mean_final_robust_core":0.705439998069812,"confirmation_pass_counts":[0,0,0],"validation_holdout_open_counts":[0,0,0],"promoted_counts":[0,0,0],"exact_consensus_count":0},
+  "claims":{"cryptographic_advantage_established":false,"production_marker_promoted":false,"production_policy_modified":false},
+  "receipt_blake2b256":"4d22cacb16143cce7832181aef30d43cef200c497529c4f8ba7986ef0fb65b82"
+}
