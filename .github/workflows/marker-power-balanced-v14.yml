@@ -1,0 +1,77 @@
+name: Marker Power Balanced Crossfit v0.14
+
+on:
+  push:
+    branches:
+      - exp/marker-power-balanced-v0.14
+    paths:
+      - bitmyner/marker_priority_v14.py
+      - bitmyner/marker_training_v14.py
+      - tests/test_marker_training_v14.py
+      - .github/workflows/marker-power-balanced-v14.yml
+  workflow_dispatch:
+
+jobs:
+  train:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      PYTHONHASHSEED: '0'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -e '.[test]'
+      - name: Regression gate
+        run: pytest -q tests/test_marker_training_v14.py tests/test_structural_marker_v13.py tests/test_marker_training_v11.py tests/test_marker_training_v4.py
+      - name: Run 3 x 1000 power-balanced augmented crossfit
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from bitmyner.marker_training_v14 import run_power_balanced_augmented_crossfit_v14
+
+          result = run_power_balanced_augmented_crossfit_v14(
+              iterations=1000,
+              seeds=(6060, 6161, 6262),
+              header_count=320,
+              nonces_per_header=256,
+              thresholds=(4, 6, 8),
+              population_size=64,
+              offspring_per_iteration=8,
+              max_predicates=3,
+              desired_confirmation_events=64.0,
+              min_discovery_headers=32,
+              requested_max_cohorts=4,
+              min_expected_events_per_cohort=8.0,
+          )
+          Path('MARKER_POWER_BALANCED_V0_14_3X1000.json').write_text(
+              json.dumps(result, indent=2) + '\n'
+          )
+          print(json.dumps({
+              'status': result['status'],
+              'receipt_blake2b256': result['receipt_blake2b256'],
+              'confirmation_power_plans': result['confirmation_power_plans'],
+              'confirmation_pass_counts': result['confirmation_pass_counts'],
+              'validation_holdout_open_counts': result['validation_holdout_open_counts'],
+              'best_confirmation_gamma_lcb_by_island': result['best_confirmation_gamma_lcb_by_island'],
+              'mean_best_confirmation_gamma_lcb': result['mean_best_confirmation_gamma_lcb'],
+              'mean_duplicate_fraction': result['mean_duplicate_fraction'],
+              'mean_final_robust_core': result['mean_final_robust_core'],
+              'promoted_counts': result['promoted_counts'],
+              'external_candidates': result['external_evaluation_authorized_candidates'],
+              'priority_semantics': result['priority_semantics'],
+          }, indent=2))
+          if result['status'] != 'PASS_POWER_BALANCED_AUGMENTED_CROSSFIT_V14_COMPLETE':
+              raise SystemExit(4)
+          if result['claims']['production_policy_modified']:
+              raise SystemExit(5)
+          if not all(p['power_target_met'] for p in result['confirmation_power_plans']):
+              raise SystemExit(6)
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: marker-power-balanced-v014-3x1000
+          path: MARKER_POWER_BALANCED_V0_14_3X1000.json
+          if-no-files-found: error
