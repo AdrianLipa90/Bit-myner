@@ -1,0 +1,30 @@
+{
+  "schema": "BITMYNER_MARKER_NULL_CALIBRATION_V0_12_3X1000_SUMMARY",
+  "status": "PASS_NULL_CALIBRATED_CROSSFIT_V12_COMPLETE",
+  "source_workflow_run_id": 34033519338,
+  "source_commit": "ae84642d852e1d26bf71b23e2464aab87a24c626",
+  "source_artifact_id": 9989454584,
+  "source_artifact_zip_sha256": "672eb290f49c3f0ca5a6bdffab1ee0ca2c22aad5ebb7f28e67d4955146715c2e",
+  "receipt_blake2b256": "2a8b847a26ddf0d3a270a6e01a5502ad65fabdf250493c2f1b8e5cf01a450849",
+  "base_v11_receipt_blake2b256": "3f8ec7ffbe93750e11e0c725b940ad2fca9f23a9eee69b9c8e8d3bc10951cdcc",
+  "total_training_iterations": 3000,
+  "total_null_permutations": 3000,
+  "seeds": [4040, 4141, 4242],
+  "base_confirmation_pass_counts": [0, 0, 0],
+  "confirmation_headers_by_island": [22, 28, 25],
+  "confirmation_samples_by_island": [2816, 3584, 3200],
+  "observed_max_gamma_lcb_by_island": [0.6335722849004337, 0.611564969242955, 0.6765480191985316],
+  "null_q95_max_gamma_lcb_by_island": [0.6339007002554636, 0.6366926525465965, 0.6765480191985316],
+  "empirical_p_max_gamma_lcb_by_island": [0.06993006993006994, 0.2077922077922078, 0.11588411588411589],
+  "familywise_false_pass_rate_by_island": [0.0, 0.0, 0.0],
+  "mean_familywise_false_pass_rate": 0.0,
+  "max_familywise_false_pass_rate": 0.0,
+  "recommended_gamma_lcb_gate": 1.0,
+  "interpretation_boundary": {
+    "confirmation_gate_detected_as_overly_liberal": false,
+    "observed_candidates_unusual_under_within_header_null_at_alpha_0_05": false,
+    "confirmation_power_remains_limited_at_hardest_threshold": true,
+    "cryptographic_advantage_established": false,
+    "production_policy_modified": false
+  }
+}
