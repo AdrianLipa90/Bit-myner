@@ -1,0 +1,33 @@
+{
+  "schema": "BITMYNER_MARKER_NESTED_CROSSFIT_V0_11_3X1000_SUMMARY",
+  "status": "PASS_NESTED_CROSSFIT_V11_COMPLETE",
+  "source_workflow_run_id": 34031977362,
+  "source_commit": "a2d3c2a4ce00e30742d3a8f7ec432efdb3c7ad2c",
+  "source_artifact_id": 9988942737,
+  "source_artifact_zip_sha256": "de70f9e0da89dadc5829ede286ddb4a105c6707beb20c6e86110ec818d25e657",
+  "receipt_blake2b256": "3f8ec7ffbe93750e11e0c725b940ad2fca9f23a9eee69b9c8e8d3bc10951cdcc",
+  "iterations_per_island": 1000,
+  "total_iterations": 3000,
+  "seeds": [4040, 4141, 4242],
+  "header_count_per_island": 160,
+  "nonces_per_header": 128,
+  "thresholds": [4, 6, 8],
+  "cohort_counts": [3, 4, 4],
+  "final_robust_core_by_island": [0.3247262248018979, 0.14515395577035417, 0.1595158914757386],
+  "best_confirmation_gamma_lcb_by_island": [0.6335722849004337, 0.611564969242955, 0.6765480191985316],
+  "mean_best_confirmation_gamma_lcb": 0.6405617577806401,
+  "mean_duplicate_fraction": 0.28671957037460566,
+  "mean_final_robust_core": 0.20979869068266355,
+  "confirmation_pass_counts": [0, 0, 0],
+  "validation_holdout_open_counts": [0, 0, 0],
+  "promoted_counts": [0, 0, 0],
+  "external_evaluation_authorized_candidates": [],
+  "claims": {
+    "cohort_robustness_used_lcb_q25": true,
+    "cohort_count_used_label_free_expected_power": true,
+    "confirmation_pass_established": false,
+    "validation_or_holdout_opened": false,
+    "cryptographic_advantage_established": false,
+    "production_policy_modified": false
+  }
+}
