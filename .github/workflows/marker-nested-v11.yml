@@ -30,19 +30,41 @@ jobs:
         run: pytest -q tests/test_marker_training_v11.py tests/test_marker_training_v10.py tests/test_marker_training_v4.py tests/test_structural_marker_v4.py
       - name: Run 3 x 1000 power-aware nested crossfit training
         run: |
-          python -m bitmyner marker-train-v11 \
-            --iterations 1000 \
-            --headers 160 \
-            --nonces-per-header 128 \
-            --thresholds 4,6,8 \
-            --seeds 4040,4141,4242 \
-            --population 64 \
-            --offspring 8 \
-            --max-predicates 3 \
-            --discovery-fraction 0.72 \
-            --max-cohorts 4 \
-            --min-expected-events-per-cohort 8 \
-            --output MARKER_NESTED_CROSSFIT_V0_11_3X1000.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from bitmyner.marker_training_v11 import run_nested_crossfit_training_v11
+
+          result = run_nested_crossfit_training_v11(
+              iterations=1000,
+              seeds=(4040, 4141, 4242),
+              header_count=160,
+              nonces_per_header=128,
+              thresholds=(4, 6, 8),
+              population_size=64,
+              offspring_per_iteration=8,
+              max_predicates=3,
+              train_discovery_fraction=0.72,
+              requested_max_cohorts=4,
+              min_expected_events_per_cohort=8.0,
+          )
+          Path('MARKER_NESTED_CROSSFIT_V0_11_3X1000.json').write_text(json.dumps(result, indent=2) + '\n')
+          print(json.dumps({
+              'status': result['status'],
+              'receipt_blake2b256': result['receipt_blake2b256'],
+              'confirmation_pass_counts': result['confirmation_pass_counts'],
+              'validation_holdout_open_counts': result['validation_holdout_open_counts'],
+              'best_confirmation_gamma_lcb_by_island': result['best_confirmation_gamma_lcb_by_island'],
+              'mean_best_confirmation_gamma_lcb': result['mean_best_confirmation_gamma_lcb'],
+              'mean_duplicate_fraction': result['mean_duplicate_fraction'],
+              'mean_final_robust_core': result['mean_final_robust_core'],
+              'cohort_counts': [p['cohort_count'] for p in result['cohort_policies']],
+              'promoted_counts': result['promoted_counts'],
+              'external_candidates': result['external_evaluation_authorized_candidates'],
+          }, indent=2))
+          if result['status'] != 'PASS_NESTED_CROSSFIT_V11_COMPLETE':
+              raise SystemExit(4)
+          PY
       - uses: actions/upload-artifact@v4
         with:
           name: marker-nested-v011-3x1000
