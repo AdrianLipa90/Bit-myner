@@ -1,0 +1,73 @@
+name: Marker Null Calibration v0.12
+
+on:
+  push:
+    branches:
+      - exp/marker-null-calibration-v0.12
+    paths:
+      - bitmyner/marker_null_v12.py
+      - tests/test_marker_null_v12.py
+      - .github/workflows/marker-null-v12.yml
+  workflow_dispatch:
+
+jobs:
+  calibrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      PYTHONHASHSEED: '0'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -e '.[test]'
+      - name: Regression gate
+        run: pytest -q tests/test_marker_null_v12.py tests/test_marker_training_v11.py tests/test_marker_training_v4.py tests/test_structural_marker_v4.py
+      - name: Run 3 x 1000 nested crossfit plus 3 x 1000 confirmation-null permutations
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from bitmyner.marker_null_v12 import run_null_calibrated_crossfit_v12
+
+          result = run_null_calibrated_crossfit_v12(
+              iterations=1000,
+              seeds=(4040, 4141, 4242),
+              header_count=160,
+              nonces_per_header=128,
+              thresholds=(4, 6, 8),
+              population_size=64,
+              offspring_per_iteration=8,
+              max_predicates=3,
+              train_discovery_fraction=0.72,
+              requested_max_cohorts=4,
+              min_expected_events_per_cohort=8.0,
+              permutations_per_island=1000,
+              calibration_seed=12012,
+          )
+          Path('MARKER_NULL_CALIBRATION_V0_12_3X1000.json').write_text(
+              json.dumps(result, indent=2) + '\n'
+          )
+          print(json.dumps({
+              'status': result['status'],
+              'receipt_blake2b256': result['receipt_blake2b256'],
+              'base_v11_receipt_blake2b256': result['base_v11_receipt_blake2b256'],
+              'base_confirmation_pass_counts': result['base_confirmation_pass_counts'],
+              'mean_familywise_false_pass_rate': result['mean_familywise_false_pass_rate'],
+              'max_familywise_false_pass_rate': result['max_familywise_false_pass_rate'],
+              'empirical_p_max_gamma_lcb_by_island': result['empirical_p_max_gamma_lcb_by_island'],
+              'recommended_gamma_lcb_gate': result['recommended_gamma_lcb_gate'],
+              'total_training_iterations': result['total_training_iterations'],
+              'total_null_permutations': result['total_null_permutations'],
+          }, indent=2))
+          if result['status'] != 'PASS_NULL_CALIBRATED_CROSSFIT_V12_COMPLETE':
+              raise SystemExit(4)
+          if result['claims']['production_policy_modified']:
+              raise SystemExit(5)
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: marker-null-v012-3x1000
+          path: MARKER_NULL_CALIBRATION_V0_12_3X1000.json
+          if-no-files-found: error
