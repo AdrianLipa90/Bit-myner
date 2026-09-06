@@ -48,7 +48,7 @@ class Score:
     per_level: tuple[dict, ...]
 
 
-def _score(corpus: StructuralCompiledCorpus, genome: tuple[int, ...], *, train_mask: int, cohorts: Sequence[int], thresholds: Sequence[int], refs: Sequence[tuple[int,...]], neg: NegativeMemory) -> Score:
+def _score(corpus: StructuralCompiledCorpus, genome: tuple[int, ...], *, train_mask: int, cohorts: Sequence[int], thresholds: Sequence[int], refs: Sequence[tuple[int,...]], neg: NegativeMemory, cohort_robust_mode: str = 'RAW_GAMMA_Q25') -> Score:
     rows = []
     robust = []
     instability = []
@@ -57,7 +57,13 @@ def _score(corpus: StructuralCompiledCorpus, genome: tuple[int, ...], *, train_m
         cms = [corpus.metric(genome, 'train', int(k), sample_mask=m) for m in cohorts]
         supported = [r for r in cms if r['event_n'] >= 2 and r['marker_n'] >= 8 and r['marker_event_n'] >= 1]
         gammas = [r['gamma'] for r in supported]
-        q = _q25(gammas)
+        gamma_lcbs = [r['gamma_lcb'] for r in supported]
+        if cohort_robust_mode == 'RAW_GAMMA_Q25':
+            q = _q25(gammas)
+        elif cohort_robust_mode == 'LCB_Q25':
+            q = _q25(gamma_lcbs)
+        else:
+            raise ValueError('unsupported cohort_robust_mode')
         med = statistics.median(gammas) if gammas else 0.0
         spread = 1.0
         if len(gammas) >= 2 and med > 0:
@@ -67,7 +73,7 @@ def _score(corpus: StructuralCompiledCorpus, genome: tuple[int, ...], *, train_m
         if okay:
             robust.append(rg)
             instability.append(spread)
-        rows.append({'k':int(k),'full_train':full,'cohort_gamma':gammas,'robust_gamma':rg,'cohort_instability':spread})
+        rows.append({'k':int(k),'full_train':full,'cohort_gamma':gammas,'cohort_gamma_lcb':gamma_lcbs,'cohort_robust_mode':cohort_robust_mode,'robust_gamma':rg,'cohort_instability':spread})
     core = min(robust) if robust else 0.0
     inst = statistics.mean(instability) if instability else 1.0
     novelty = _novelty_score(genome, refs, k=8)
@@ -112,7 +118,10 @@ def run_training_1000_v4(
     family_prior_strength: float = 0.0,
     final_evaluate: bool = True,
     train_discovery_fraction: float = 1.0,
+    cohort_robust_mode: str = 'RAW_GAMMA_Q25',
 ) -> dict:
+    if cohort_robust_mode not in {'RAW_GAMMA_Q25', 'LCB_Q25'}:
+        raise ValueError('unsupported cohort_robust_mode')
     rng = random.Random(seed)
     headers = deterministic_headers(header_count, seed=seed)
     samples = collect_samples(headers, nonces_per_header=nonces_per_header, event_k=min(thresholds), nonce_seed=seed ^ 0x5EED)
@@ -202,7 +211,7 @@ def run_training_1000_v4(
             duplicates += 1
             continue
         archive.add(g)
-        population[g] = _score(corpus, g, train_mask=train_mask, cohorts=cohorts, thresholds=thresholds, refs=tuple(population), neg=neg)
+        population[g] = _score(corpus, g, train_mask=train_mask, cohorts=cohorts, thresholds=thresholds, refs=tuple(population), neg=neg, cohort_robust_mode=cohort_robust_mode)
         evaluated += 1
 
     def key(s: Score):
@@ -211,7 +220,7 @@ def run_training_1000_v4(
     def rerank() -> None:
         nonlocal population
         refs = tuple(population)
-        rescored = {g:_score(corpus,g,train_mask=train_mask,cohorts=cohorts,thresholds=thresholds,refs=refs,neg=neg) for g in population}
+        rescored = {g:_score(corpus,g,train_mask=train_mask,cohorts=cohorts,thresholds=thresholds,refs=refs,neg=neg,cohort_robust_mode=cohort_robust_mode) for g in population}
         population = {s.genome:s for s in sorted(rescored.values(), key=key, reverse=True)[:population_size]}
 
     def propose(ranked: Sequence[Score]) -> tuple[int,...]:
@@ -268,7 +277,7 @@ def run_training_1000_v4(
                 duplicates += 1
                 continue
             refs = tuple(population) + tuple(x.genome for x in children)
-            s = _score(corpus,g,train_mask=train_mask,cohorts=cohorts,thresholds=thresholds,refs=refs,neg=neg)
+            s = _score(corpus,g,train_mask=train_mask,cohorts=cohorts,thresholds=thresholds,refs=refs,neg=neg,cohort_robust_mode=cohort_robust_mode)
             archive.add(g); children.append(s); evaluated += 1
             sev = max(0.0, min(1.0, 0.90-s.robust_core, s.instability-0.2))
             if sev > 0:
@@ -329,7 +338,7 @@ def run_training_1000_v4(
         'schema':SCHEMA,'status':'PASS_TRAINING_COMPLETE','iterations':iterations,
         'fixture':{'header_count':header_count,'nonces_per_header':nonces_per_header,'sample_count':len(samples),'split_counts':{k:len(v) for k,v in corpus.samples_by_split.items()},'thresholds':list(thresholds),'seed':seed,'split_seed':split_seed},
         'causal_filter':filter_receipt,
-        'training_policy':{'selection_surface':'TRAIN_DISCOVERY_ONLY' if confirmation_headers else 'TRAIN_ONLY','validation_role':'FROZEN_UNTIL_CONFIRMATION_PASS' if confirmation_headers else 'FROZEN_UNTIL_TRAINING_COMPLETE','holdout_role':'FROZEN_UNTIL_CONFIRMATION_PASS' if confirmation_headers else 'FROZEN_UNTIL_TRAINING_COMPLETE','rolling_header_cohorts':True,'structural_predicates':True,'unlabelled_nonce_variation_filter':True,'requested_population_size':requested_population_size,'effective_population_size':population_size,'family_prior':prior_map,'family_prior_strength':prior_strength,'family_prior_probability':prior_probability,'train_discovery_fraction':discovery_fraction,'train_discovery_headers':len(discovery_headers),'train_confirmation_headers':len(confirmation_headers)},
+        'training_policy':{'selection_surface':'TRAIN_DISCOVERY_ONLY' if confirmation_headers else 'TRAIN_ONLY','validation_role':'FROZEN_UNTIL_CONFIRMATION_PASS' if confirmation_headers else 'FROZEN_UNTIL_TRAINING_COMPLETE','holdout_role':'FROZEN_UNTIL_CONFIRMATION_PASS' if confirmation_headers else 'FROZEN_UNTIL_TRAINING_COMPLETE','rolling_header_cohorts':True,'structural_predicates':True,'unlabelled_nonce_variation_filter':True,'requested_population_size':requested_population_size,'effective_population_size':population_size,'family_prior':prior_map,'family_prior_strength':prior_strength,'family_prior_probability':prior_probability,'train_discovery_fraction':discovery_fraction,'train_discovery_headers':len(discovery_headers),'train_confirmation_headers':len(confirmation_headers),'cohort_robust_mode':cohort_robust_mode},
         'search':{'unique_genomes_evaluated':evaluated,'duplicate_proposals':duplicates,'duplicate_proposal_fraction':duplicates/max(1,duplicates+evaluated),'cohort_refreshes':refreshes,'negative_memory':neg.snapshot()},
         'checkpoints':checkpoints,'final_top8':finals,'promoted_count':len(promoted),
         'predicate_catalog':[{'stage':p.stage,'round':p.round,'op':p.op,'left':p.left,'right':p.right,'bit':p.bit,'value':p.value,'family':p.family,'predicate_id':p.predicate_id} for p in predicates],
