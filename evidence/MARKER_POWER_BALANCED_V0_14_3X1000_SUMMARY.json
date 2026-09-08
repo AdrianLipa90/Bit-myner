@@ -1,0 +1,67 @@
+{
+  "schema": "BITMYNER_MARKER_POWER_BALANCED_V0_14_SUMMARY",
+  "source_training_commit": "fa9da4966d0109101dab688937a886e3c3137363",
+  "source_receipt_blake2b256": "4d35413128f97b1c586c19255154c631b8e708baad5c67d762df1c8d61afbe8f",
+  "source_artifact_sha256": "2a424644f866934a84d0cebf4a882d966165e729d59de4dd44f6c53d48afd60b",
+  "status": "PASS_TRAINING_COMPLETE_NO_MARKER_PROMOTION",
+  "islands": [
+    {
+      "island": 0,
+      "seed": 6060,
+      "train_discovery_headers": 133,
+      "train_confirmation_headers": 64,
+      "confirmation_samples": 16384,
+      "confirmation_event_counts": {"4": 1015, "6": 282, "8": 79},
+      "max_confirmation_gamma_by_threshold": {"4": 0.9879958601517689, "6": 1.0016124219787184, "8": 1.0165205332444043},
+      "max_confirmation_gamma_lcb_by_threshold": {"4": 0.8183673402820046, "6": 0.6959054017377501, "8": 0.5111676924386341},
+      "top_family_counts": [["s2:r0:xor:a_w", 2], ["s2:r0:xor:t1_w", 2], ["s2:r3:xor:e_t1", 2], ["s2:r0:carry:t1_t2", 1], ["s2:r0:xor:e_t1", 1]],
+      "confirmation_pass_count": 0
+    },
+    {
+      "island": 1,
+      "seed": 6161,
+      "train_discovery_headers": 129,
+      "train_confirmation_headers": 64,
+      "confirmation_samples": 16384,
+      "confirmation_event_counts": {"4": 1059, "6": 275, "8": 67},
+      "max_confirmation_gamma_by_threshold": {"4": 0.9937642981330441, "6": 0.9983432060954839, "8": 1.006122202064122},
+      "max_confirmation_gamma_lcb_by_threshold": {"4": 0.8269029394976866, "6": 0.6901380800616747, "8": 0.47367292842193903},
+      "top_family_counts": [["s2:r0:xor:a_w", 3], ["s2:r0:carry:t1_t2", 2], ["s1:r7:xor_prev:t1_t1", 1], ["s1:r7:direct:a", 1], ["s2:r0:xor:a_t1", 1]],
+      "confirmation_pass_count": 0
+    },
+    {
+      "island": 2,
+      "seed": 6262,
+      "train_discovery_headers": 116,
+      "train_confirmation_headers": 64,
+      "confirmation_samples": 16384,
+      "confirmation_event_counts": {"4": 1069, "6": 275, "8": 68},
+      "max_confirmation_gamma_by_threshold": {"4": 0.9612590781166843, "6": 0.9698817496350386, "8": 0.9462351186082185},
+      "max_confirmation_gamma_lcb_by_threshold": {"4": 0.7986240268612593, "6": 0.6676009753404135, "8": 0.44203935798339306},
+      "top_family_counts": [["s2:r0:xor:a_t1", 5], ["s2:r0:carry:t1_t2", 3], ["s2:r0:xor:e_t1", 3], ["s2:r0:xor:t1_w", 2]],
+      "confirmation_pass_count": 0
+    }
+  ],
+  "aggregate": {
+    "confirmation_pass_counts": [0, 0, 0],
+    "validation_holdout_open_counts": [0, 0, 0],
+    "promoted_counts": [0, 0, 0],
+    "external_evaluation_authorized_candidates": [],
+    "best_confirmation_gamma_lcb_by_island": [0.8183673402820046, 0.8269029394976866, 0.7986240268612593],
+    "mean_best_confirmation_gamma_lcb": 0.8146314355469835,
+    "mean_duplicate_fraction": 0.32301507329042795,
+    "mean_final_robust_core": 0.4671224064736198
+  },
+  "v0_13_comparison": {
+    "v0_13": {"mean_best_confirmation_gamma_lcb": 0.6239077231008415, "mean_duplicate_fraction": 0.29496019698724446, "mean_final_robust_core": 0.2612658007305499, "confirmation_pass_counts": [0, 0, 0]},
+    "v0_14": {"mean_best_confirmation_gamma_lcb": 0.8146314355469835, "mean_duplicate_fraction": 0.32301507329042795, "mean_final_robust_core": 0.4671224064736198, "confirmation_pass_counts": [0, 0, 0]},
+    "relative_change": {"mean_best_confirmation_gamma_lcb": 0.3056921807254427, "mean_duplicate_fraction": 0.09511410891957306, "mean_final_robust_core": 0.7879202144614981}
+  },
+  "claims": {
+    "cryptographic_advantage_established": false,
+    "production_policy_modified": false,
+    "hard_rejection_authorized": false,
+    "deferred_candidates_discarded": false,
+    "priority_semantics_only": true
+  }
+}
