@@ -1,0 +1,56 @@
+{
+  "schema": "BITMYNER_MARKER_HORIZON_ADAPTIVE_V0_8_SUMMARY",
+  "status": "PASS_HORIZON_ADAPTIVE_ISLAND_TRAINING_COMPLETE",
+  "source_receipt_blake2b256": "0597d4a0aae836d9614e25876a85fb994761cdfa55e2b355ddeac356ff397070",
+  "configuration": {
+    "iterations_per_island": 100,
+    "total_iterations": 300,
+    "pilot_strengths": [0.0,0.2,0.25,0.35,0.5,1.0,2.0],
+    "duplicate_cap": 0.2,
+    "selected_strength": 0.2
+  },
+  "pilot_summary": [
+    {"strength":0.0,"duplicate_fraction":0.046357615894039736,"predicted_horizon_fraction":0.13107991688122567,"robust_core":0.7179257493430573},
+    {"strength":0.2,"duplicate_fraction":0.06796116504854369,"predicted_horizon_fraction":0.14417776987918118,"robust_core":0.809512870853973},
+    {"strength":0.25,"duplicate_fraction":0.058823529411764705,"predicted_horizon_fraction":0.08187077809873017,"robust_core":0.6698051876022627},
+    {"strength":0.35,"duplicate_fraction":0.09433962264150944,"predicted_horizon_fraction":0.14595350755461417,"robust_core":0.6698051876022627},
+    {"strength":0.5,"duplicate_fraction":0.15789473684210525,"predicted_horizon_fraction":0.3430486479220227,"robust_core":0.809512870853973},
+    {"strength":1.0,"duplicate_fraction":0.20441988950276244,"predicted_horizon_fraction":0.3805104010170123,"robust_core":0.7943745819770173},
+    {"strength":2.0,"duplicate_fraction":0.1864406779661017,"predicted_horizon_fraction":0.4177855500175162,"robust_core":0.809512870853973}
+  ],
+  "results": {
+    "mean_duplicate_fraction": 0.09897478503133511,
+    "focused_duplicate_fraction": 0.08860759493670886,
+    "escape_mean_duplicate_fraction": 0.10415838007864824,
+    "promoted_total": 0,
+    "islands": [
+      {"seed":1717,"mode":"HORIZON_ADAPTIVE_FOCUSED","duplicate_fraction":0.08860759493670886,"champion_family":["s1:r7:xor:a_t1"],"robust_core":0.7136593342003569,"promoted_count":0},
+      {"seed":1818,"mode":"UNRESTRICTED_ESCAPE","duplicate_fraction":0.09812108559498957,"champion_family":["s1:r15:direct:e"],"robust_core":0.6141639856810153,"promoted_count":0},
+      {"seed":1919,"mode":"UNRESTRICTED_ESCAPE","duplicate_fraction":0.1101956745623069,"champion_family":["s1:r15:xor:a_e"],"robust_core":0.7099590297344426,"promoted_count":0}
+    ],
+    "consensus_component_families": [
+      {"family":"s2:r0:xor:e_t1","seed_support":2,"run_indices":[0,2]},
+      {"family":"s1:r7:xor:e_w","seed_support":2,"run_indices":[0,2]},
+      {"family":"s1:r7:direct:t1","seed_support":2,"run_indices":[0,2]},
+      {"family":"s1:r15:xor:e_w","seed_support":2,"run_indices":[1,2]}
+    ]
+  },
+  "comparison_to_v0_7_bounded": {
+    "v0_7_receipt": "a4ad094ad1710225eeb5bd39b234f1ec64939b455f5e51dd572736d6e417a992",
+    "v0_7_mean_duplicate_fraction": 0.15417672216100486,
+    "v0_7_focused_duplicate_fraction": 0.23674911660777384,
+    "mean_duplicate_relative_reduction": 0.358043265908994,
+    "focused_duplicate_relative_reduction": 0.6257320989986774
+  },
+  "claims": {
+    "pilot_selection_uses_training_only": true,
+    "validation_or_holdout_used_to_select_prior_strength": false,
+    "pilot_strengths_share_common_fixture_split": true,
+    "horizon_duplicate_prediction_used": true,
+    "escape_islands_preserve_global_exploration": true,
+    "hard_whitelist_applied": false,
+    "production_policy_modified": false,
+    "cryptographic_advantage_assumed": false
+  },
+  "receipt_blake2b256": "b460fa683e47c2542e670b2b3fae7c94f33f4271a2f6231fe490389bb836fd8a"
+}
