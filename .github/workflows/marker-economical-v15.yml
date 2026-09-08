@@ -74,3 +74,5 @@ jobs:
           name: marker-economical-v015-3x1000
           path: MARKER_ECONOMICAL_V0_15_3X1000.json
           if-no-files-found: error
+
+# receipt rerun: 2026-09-08 after nested TRAIN smoke-fixture repair
