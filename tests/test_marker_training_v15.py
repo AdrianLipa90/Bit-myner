@@ -18,7 +18,7 @@ def test_smoke_crossfit_v15_keeps_no_skip_and_nested_gates():
     r = run_economical_crossfit_v15(
         iterations=8,
         seeds=(101, 202, 303),
-        header_count=30,
+        header_count=34,
         nonces_per_header=24,
         thresholds=(2, 3),
         population_size=10,
