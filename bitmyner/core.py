@@ -189,7 +189,11 @@ class NativeBackend:
         self.library = library
         self.lib = ctypes.CDLL(str(library))
         self.U8 = ctypes.c_ubyte
-        if name == "avx512x2":
+        if name == "avx512x2_miner":
+            self.lanes = 32
+            self._bench = self.lib.bm_avx512x2_miner_scan_bench
+            self._target = self.lib.bm_avx512x2_miner_scan_target
+        elif name == "avx512x2":
             self.lanes = 32
             self._bench = self.lib.bm_avx512x2_scan_bench
             self._target = self.lib.bm_avx512x2_scan_target
@@ -226,7 +230,6 @@ class NativeBackend:
         r = self._target(a, start, aligned, t, threads, ctypes.byref(found_nonce), found_hash)
         if r:
             return int(found_nonce.value), bytes(found_hash)
-        # Exact tail verification in Python, at most lanes-1 hashes.
         for n in range(start + aligned, start + count):
             h = sha256d(header76 + struct.pack("<I", n & 0xFFFFFFFF))
             if int.from_bytes(h, "little") <= target:
@@ -242,13 +245,13 @@ def available_backend_names(flags: set[str] | None = None) -> list[str]:
     flags = flags if flags is not None else read_cpu_flags()
     out: list[str] = []
     if "avx512f" in flags:
-        out.extend(["avx512x2", "avx512"])
+        out.extend(["avx512x2_miner", "avx512x2", "avx512"])
     if "avx2" in flags:
         out.append("avx2")
     if "sha_ni" in flags or "sha" in flags:
         out.append("shani")
     if "shani" not in out:
-        out.append("shani")  # OpenSSL fallback remains valid even if SHA-NI is absent.
+        out.append("shani")
     return out
 
 
@@ -258,10 +261,10 @@ def build_backend(name: str, build_dir: Path | None = None) -> NativeBackend:
     gcc = shutil.which("gcc")
     if not gcc:
         raise RuntimeError("GCC_REQUIRED")
-    source = source_root() / {"avx512x2": "sha256d_avx512_x2.c", "avx512": "sha256d_avx512.c", "avx2": "sha256d_avx2.c", "shani": "sha256d_shani.c"}[name]
+    source = source_root() / {"avx512x2_miner": "sha256d_avx512_x2_miner.c", "avx512x2": "sha256d_avx512_x2.c", "avx512": "sha256d_avx512.c", "avx2": "sha256d_avx2.c", "shani": "sha256d_shani.c"}[name]
     out = build_dir / f"libbitmyner_{name}.so"
     flags = ["-O3", "-mtune=native", "-fopenmp", "-fPIC", "-shared"]
-    if name in {"avx512x2", "avx512"}:
+    if name in {"avx512x2_miner", "avx512x2", "avx512"}:
         flags.insert(1, "-march=native")
     elif name == "avx2":
         flags.insert(1, "-mavx2")
@@ -314,12 +317,9 @@ def benchmark_candidate(backend: NativeBackend, candidate: Candidate, *, repeats
         samples.append(count / max(dt, 1e-12))
     med = statistics.median(samples)
     cv = statistics.pstdev(samples) / med if len(samples) > 1 and med else 0.0
-    # κ acts only as a conservative instability penalty. It never alters nonce/hash semantics.
     latency = count / max(med, 1e-12)
     tau = latency / max(stale_budget_s, 1e-12)
     eligible = tau <= 1.0 and cv <= 0.15
-    # κ penalizes instability; τ penalizes batches that exceed the stale-work latency budget.
-    # GREMLIN promotion rejects high-jitter candidates instead of chasing transient peaks.
     score = med / (1.0 + KAPPA * cv)
     if not eligible:
         score *= 1.0 / tau
@@ -340,9 +340,7 @@ def autotune(noema: NoemaStatus, *, repeats: int = 5, batch_hashes: int = 6_400_
         except Exception as exc:
             backend_errors[name] = repr(exc)
             continue
-        # Search a latency/throughput lattice around the requested central batch size.
-        # Keep the scalar/SHA-NI fallback grid narrow so autotuning remains bounded.
-        if name in {"avx512x2", "avx512"}:
+        if name in {"avx512x2_miner", "avx512x2", "avx512"}:
             batch_grid = sorted({max(backend.lanes * 4096, batch_hashes // 2), batch_hashes, batch_hashes * 2})
         elif name == "avx2":
             batch_grid = sorted({max(backend.lanes * 4096, batch_hashes // 2), batch_hashes})
