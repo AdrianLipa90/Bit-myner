@@ -1,0 +1,48 @@
+{
+  "schema": "BITMYNER_SHA256D_TARGET_FASTPATH_V1",
+  "created_unix_ns": 1788862434853331609,
+  "execution_surface": "CHAT_CONTAINER_CURRENT_HOST",
+  "cpu": "AMD EPYC 9V74 80-Core Processor / 5 vCPU KVM",
+  "source": "native/sha256d_avx512_x2.c",
+  "source_sha256": "19a530f5f9d9c1e9e36e050a0f4ca43959b31136f3b374291304f7e8857a306e",
+  "baseline_source_sha256": "2ab5c3e363e56ff67c6dbbff02ffd5a510ab6aedc4b4953464230c01f03182af",
+  "optimization": {
+    "first_sha_fixed_round_prehash": 3,
+    "second_sha_target_fastpath_rounds": 61,
+    "fastpath_condition": "target_le[28:32] == 0x00000000",
+    "common_path": "compute exact final SHA256 word7 after rounds 0..60; reject lanes whose word7 != 0 without rounds 61..63",
+    "rare_candidate_path": "complete full second SHA and exact 256-bit target comparison",
+    "general_target_fallback": "full exact second SHA + full 256-bit target comparison",
+    "nonce_vectorization": "AVX512 16-lane vector nonce construction x2",
+    "ternary_logic": "AVX512 VPTERNLOGD for Sigma XOR3, Ch, Maj",
+    "consensus_semantics_modified": false,
+    "nonce_probability_modified": false
+  },
+  "correctness": {
+    "genesis": "PASS",
+    "genesis_nonce": 2083236893,
+    "genesis_hash": "000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f",
+    "arbitrary_target_first_hit_crosscheck": "200/200 PASS",
+    "native_targeted_pytest": "8/8 PASS"
+  },
+  "paired_benchmark": {
+    "schema": "BITMYNER_PRODUCTION_TARGET_PAIRED_V1",
+    "count": 3200000,
+    "threads": {
+      "1": {"old_mh_s":25.817509627046793,"new_mh_s":29.08595020081758,"new_vs_old":1.1265978253125826},
+      "2": {"old_mh_s":47.67708879881627,"new_mh_s":45.7664463870394,"new_vs_old":0.9599253549259428},
+      "3": {"old_mh_s":79.33352697325041,"new_mh_s":85.98233718586151,"new_vs_old":1.0838083275290777},
+      "4": {"old_mh_s":58.18054878802644,"new_mh_s":65.73784298770937,"new_vs_old":1.1298938280423751},
+      "5": {"old_mh_s":65.53450350650553,"new_mh_s":74.56129416038274,"new_vs_old":1.1377410397712273}
+    }
+  },
+  "summary": {
+    "threads_1_new_mh_s": 29.08595020081758,
+    "threads_1_old_mh_s": 25.817509627046793,
+    "threads_1_speedup": 1.1265978253125826,
+    "claim_1000x": false,
+    "claim_2x_vs_previous_avx512x2": false
+  },
+  "verdict": "PASS_MEASURED_INCREMENTAL_SPEEDUP_NOT_1000X",
+  "receipt_sha256": "6523876757dcd0f7908d0afd222a3ba80d066432f3317cde0bdb63b2243d632e"
+}
